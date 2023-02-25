@@ -20,7 +20,8 @@ export function GameProvider({ children }) {
   const [history, setHistory] = useState(null);
 
   useEffect(() => {
-    const _socket = io("http://localhost:3001");
+    // const _socket = io("http://localhost:3001");
+    const _socket = io("https://aviuane.onrender.com");
 
     _socket.on("connect", () => {
       setSocket(_socket);
