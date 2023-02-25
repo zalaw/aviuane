@@ -26,6 +26,17 @@ function App() {
         <Grid />
       </div>
 
+      <div className="history-container">
+        {history?.map((x, i) => {
+          return (
+            <p key={i}>
+              {x.turn === turn ? "You" : "Opponent"}: {x.row + 1}
+              {String.fromCharCode(65 + x.col)}
+            </p>
+          );
+        })}
+      </div>
+
       {/* <div className="planes-container">
         <Plane />
         <Plane />

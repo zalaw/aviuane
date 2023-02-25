@@ -303,6 +303,7 @@ export function GameProvider({ children }) {
 
   function handleCellClick({ row, col }) {
     if (turn !== now) return;
+    if (history?.find(x => x.turn === turn && x.row === row && x.col === col)) return;
 
     socket.emit("ROUND_OVER", { playerTurn: turn, row, col });
   }

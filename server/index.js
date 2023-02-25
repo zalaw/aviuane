@@ -175,7 +175,9 @@ const generateCode = () => {
   return id;
 };
 
-app.use(express.static("./server/public/build"));
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static("./server/public/build"));
+}
 
 app.all("*", (req, res) => {
   res.status(404);
