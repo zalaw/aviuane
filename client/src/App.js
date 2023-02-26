@@ -3,7 +3,7 @@ import Grid from "./Grid";
 import Plane from "./Plane";
 
 function App() {
-  const { socket, code, opponent, gameStarted, turn, now, history } = useGame();
+  const { socket, code, opponent, gameStarted, turn, now, history, gameOver, winner } = useGame();
 
   return (
     <>
@@ -14,7 +14,11 @@ function App() {
       <p>My history: {JSON.stringify(history?.filter(x => x.turn === turn))}</p>
       <p>Opponent history: {JSON.stringify(history?.filter(x => x.turn !== turn))}</p> */}
 
-      {gameStarted && <div className="event">{now === turn ? <p>Your turn</p> : <p>Waiting for opponent</p>}</div>}
+      {!gameOver && gameStarted && (
+        <div className="event">{now === turn ? <p>Your turn</p> : <p>Waiting for opponent</p>}</div>
+      )}
+      {!winner ? null : winner === turn ? "Izi pizi lemon schuizi" : "Better luck next time"}
+
       {!opponent && (
         <p className="code">
           Your room code is <b>{code}</b>

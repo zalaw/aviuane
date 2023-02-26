@@ -4,7 +4,19 @@ import Plane from "./Plane";
 import "./style.css";
 
 export default function Grid({ primary = false }) {
-  const { player, opponent, joinRoom, handleToggleReady, turn, gameStarted, handleCellClick, history } = useGame();
+  const {
+    player,
+    opponent,
+    joinRoom,
+    handleToggleReady,
+    turn,
+    gameStarted,
+    handleCellClick,
+    history,
+    opponentPlanes,
+    gameOver,
+    handleTogglePlayAgain,
+  } = useGame();
 
   const inputRef = useRef(null);
 
@@ -33,6 +45,8 @@ export default function Grid({ primary = false }) {
     <div className="grid">
       {cells}
 
+      {!primary && opponentPlanes.map(plane => <Plane key={plane.id} plane={plane} />)}
+
       {primary && player?.planes?.map(plane => <Plane key={plane.id} plane={plane} />)}
 
       {!primary && !opponent && (
@@ -54,6 +68,22 @@ export default function Grid({ primary = false }) {
       {!gameStarted && !primary && opponent && (
         <div className="ready-container">
           <div className={opponent.ready ? "ready" : "not-ready"}></div>
+          Opponent
+        </div>
+      )}
+
+      {gameOver && primary && (
+        <div className="ready-container">
+          <div className={player.playAgain ? "ready" : "not-ready"}></div>
+          <button className="btn-ready" onClick={handleTogglePlayAgain}>
+            Play again
+          </button>
+        </div>
+      )}
+
+      {gameOver && !primary && (
+        <div className="ready-container">
+          <div className={opponent.playAgain ? "ready" : "not-ready"}></div>
           Opponent
         </div>
       )}

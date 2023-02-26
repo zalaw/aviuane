@@ -1,8 +1,14 @@
-import express from "express";
-import { createServer } from "http";
-import cors from "cors";
-import { Server } from "socket.io";
-import crypto from "crypto";
+// import express from "express";
+// import { createServer } from "http";
+// import cors from "cors";
+// import { Server } from "socket.io";
+// import crypto from "crypto";
+
+const express = require("express");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const crypto = require("crypto");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,7 +32,7 @@ io.on("connection", socket => {
   socket.join(code);
 
   rooms.set(code, {
-    players: [{ id: socket.id, mainRoom: code, ready: false, planes: null }],
+    players: [{ id: socket.id, mainRoom: code, ready: false, playAgain: false, planes: null }],
     joinable: true,
     history: [],
   });
@@ -57,6 +63,7 @@ io.on("connection", socket => {
       id: socket.id,
       mainRoom: Array.from(socket.rooms.values())[1],
       ready: false,
+      playAgain: false,
       planes: null,
       history: [],
     });
@@ -101,6 +108,29 @@ io.on("connection", socket => {
     console.log("\n-----------------------USER_TOGGLE_READY done-------------------------\n\n");
   });
 
+  socket.on("USER_TOGGLE_PLAY_AGAIN", () => {
+    console.log("------------------------USER_TOGGLE_PLAY_AGAIN------------------------\n");
+
+    const joinedRooms = Array.from(socket.rooms.values());
+
+    const code = joinedRooms[2] || joinedRooms[1];
+    const room = rooms.get(code);
+    const player = room.players.find(x => x.id === socket.id);
+
+    player.playAgain = !player.playAgain;
+
+    io.to(code).emit("USER_TOGGLE_PLAY_AGAIN", { id: socket.id });
+
+    if (room.players.every(x => x.playAgain)) {
+      room.history = [];
+      room.players[0].ready = false;
+      room.players[1].ready = false;
+      io.to(code).emit("PLAY_AGAIN");
+    }
+
+    console.log("\n-----------------------USER_TOGGLE_PLAY_AGAIN done-------------------------\n\n");
+  });
+
   socket.on("ROUND_OVER", ({ playerTurn, row, col }) => {
     console.log("------------------------ROUND_OVER------------------------\n");
 
@@ -111,6 +141,7 @@ io.on("connection", socket => {
 
     let hit = false;
     let head = false;
+
     room.players[(playerTurn + 1) % 2].planes.forEach(p => {
       if (!p.destroyed) {
         const piece = p.pieces.find(x => x.row === row && x.col === col);
@@ -137,6 +168,72 @@ io.on("connection", socket => {
       nowTurn: (playerTurn + 1) % 2,
       history: room.history,
     });
+
+    // let allDestroyed = room.players[playerTurn].planes.every(x => x.destroyed);
+    let allDestroyed = room.players[0].planes.every(x => x.destroyed);
+
+    if (allDestroyed) {
+      room.players[0].ready = false;
+      room.players[1].ready = false;
+      room.players[0].playAgain = false;
+      room.players[1].playAgain = false;
+      io.to(room.players[0].id).emit("GAME_OVER", {
+        winner: 1,
+        opponentPlanes: room.players[1].planes,
+      });
+      return io.to(room.players[1].id).emit("GAME_OVER", { winner: 1, opponentPlanes: room.players[0].planes });
+    }
+
+    // if (allDestroyed) {
+    //   io.to(room.players[(playerTurn + 1) % 2].id).emit("GAME_OVER", {
+    //     winner: (playerTurn + 1) % 2,
+    //     opponentPlanes: room.players[playerTurn].planes,
+    //   });
+    //   return io
+    //     .to(room.players[playerTurn].id)
+    //     .emit("GAME_OVER", { winner: (playerTurn + 1) % 2, opponentPlanes: room.players[(playerTurn + 1) % 2].planes });
+    // }
+
+    // if (allDestroyed) {
+    //   return io.to(code).emit("GAME_OVER", {
+    //     winner: (playerTurn + 1) % 2,
+    //     players: room.players,
+    //   });
+    // }
+
+    // allDestroyed = room.players[(playerTurn + 1) % 2].planes.every(x => x.destroyed);
+
+    allDestroyed = room.players[1].planes.every(x => x.destroyed);
+
+    if (allDestroyed) {
+      room.players[0].ready = false;
+      room.players[1].ready = false;
+      room.players[0].playAgain = false;
+      room.players[1].playAgain = false;
+      io.to(room.players[0].id).emit("GAME_OVER", {
+        winner: 0,
+        opponentPlanes: room.players[1].planes,
+      });
+      return io.to(room.players[1].id).emit("GAME_OVER", { winner: 0, opponentPlanes: room.players[0].planes });
+    }
+
+    // if (allDestroyed) {
+    //   return io.to(code).emit("GAME_OVER", {
+    //     winner: playerTurn,
+    //     players: room.players,
+    //   });
+    // }
+
+    // if (allDestroyed) {
+    //   io.to(room.players[(playerTurn + 1) % 2].id).emit("GAME_OVER", {
+    //     winner: playerTurn,
+    //     opponentPlanes: room.players[(playerTurn + 1) % 2].planes,
+    //   });
+    //   return io
+    //     .to(room.players[playerTurn].id)
+    //     .emit("GAME_OVER", { winner: playerTurn, opponentPlanes: room.players[playerTurn].planes });
+    // }
+
     console.log("\n-----------------------ROUND_OVER done-------------------------\n\n");
   });
 
@@ -194,3 +291,20 @@ server.listen(PORT, () => {
 
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
+// const express = require("express");
+// const { createServer } = require("http");
+// const { Server } = require("socket.io");
+
+// const app = express();
+// const httpServer = createServer(app);
+
+// const io = new Server(httpServer);
+
+// io.on("connect", socket => {
+//   console.log("user connected", socket.id);
+// });
+
+// app.use(express.static("public"));
+
+// httpServer.listen(5000);

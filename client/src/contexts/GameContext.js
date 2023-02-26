@@ -11,13 +11,16 @@ export function useGame() {
 export function GameProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
-  const [player, setPlayer] = useState({ ready: false, planes: defaultPlanes });
+  const [player, setPlayer] = useState({ ready: false, playAgain: false, planes: defaultPlanes });
   const [opponent, setOpponent] = useState(null);
   const [code, setCode] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [turn, setTurn] = useState(0);
   const [now, setNow] = useState(null);
   const [history, setHistory] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [opponentPlanes, setOpponentPlanes] = useState([]);
 
   useEffect(() => {
     const _socket = io(
@@ -48,7 +51,7 @@ export function GameProvider({ children }) {
       });
 
       _socket.on("USER_JOINED", () => {
-        setOpponent({ ready: false });
+        setOpponent({ ready: false, playAgain: false });
       });
 
       _socket.on("USER_TOGGLE_READY", ({ id }) => {
@@ -56,6 +59,25 @@ export function GameProvider({ children }) {
           setPlayer(curr => ({ ...curr, ready: !curr.ready }));
         } else {
           setOpponent(curr => ({ ...curr, ready: !curr.ready }));
+        }
+      });
+
+      _socket.on("PLAY_AGAIN", () => {
+        alert("YOOO");
+        setGameStarted(false);
+        setGameOver(false);
+        setOpponentPlanes([]);
+        setHistory(null);
+        player.planes.forEach(p => (p.destroyed = false));
+        setPlayer(curr => ({ ...curr, planes: defaultPlanes, ready: false }));
+        setOpponent(curr => ({ ...curr, ready: false }));
+      });
+
+      _socket.on("USER_TOGGLE_PLAY_AGAIN", ({ id }) => {
+        if (id === _socket.id) {
+          setPlayer(curr => ({ ...curr, playAgain: !curr.playAgain }));
+        } else {
+          setOpponent(curr => ({ ...curr, playAgain: !curr.playAgain }));
         }
       });
 
@@ -90,6 +112,20 @@ export function GameProvider({ children }) {
             planes: planes,
           };
         });
+      });
+
+      _socket.on("GAME_OVER", ({ winner, opponentPlanes }) => {
+        setGameOver(true);
+        setWinner(winner);
+        setPlayer(curr => ({ ...curr, playAgain: false }));
+        setOpponent(curr => ({ ...curr, playAgain: false }));
+
+        // console.log("my turn is", turn);
+        // console.log("winner", winner);
+        // console.log("my planes are", players[turn].planes);
+        // console.log("opponent planes are", players[(turn + 1) % 2].planes);
+
+        setOpponentPlanes(opponentPlanes);
       });
 
       _socket.on("USER_LEFT", () => {
@@ -165,6 +201,7 @@ export function GameProvider({ children }) {
     // });
 
     return () => {
+      console.log("useEffect cleanup");
       _socket.disconnect();
       setOpponent(null);
       setGameStarted(false);
@@ -275,9 +312,7 @@ export function GameProvider({ children }) {
   }
 
   function joinRoom(inputCode) {
-    console.log("todo");
-
-    // if (code === inputCode.toUpperCase()) return;
+    if (code === inputCode.toUpperCase()) return;
 
     setTurn(1);
 
@@ -302,10 +337,15 @@ export function GameProvider({ children }) {
   }
 
   function handleCellClick({ row, col }) {
+    if (gameOver) return;
     if (turn !== now) return;
     if (history?.find(x => x.turn === turn && x.row === row && x.col === col)) return;
 
     socket.emit("ROUND_OVER", { playerTurn: turn, row, col });
+  }
+
+  function handleTogglePlayAgain() {
+    socket.emit("USER_TOGGLE_PLAY_AGAIN");
   }
 
   const value = {
@@ -322,6 +362,10 @@ export function GameProvider({ children }) {
     now,
     handleCellClick,
     history,
+    gameOver,
+    winner,
+    opponentPlanes,
+    handleTogglePlayAgain,
   };
 
   return <GameContext.Provider value={value}>{!loading && children}</GameContext.Provider>;
