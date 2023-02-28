@@ -1,92 +1,61 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
+import ActionsButtons from "./components/ActionsButtons";
+import UserNotJoined from "./components/UserNotJoined";
 import { useGame } from "./contexts/GameContext";
 import Plane from "./Plane";
 import "./style.css";
 
+const ROWS = 10;
+const CELL_SIZE = 2;
+
 export default function Grid({ primary = false }) {
-  const {
-    player,
-    opponent,
-    joinRoom,
-    handleToggleReady,
-    turn,
-    gameStarted,
-    handleCellClick,
-    history,
-    opponentPlanes,
-    gameOver,
-    handleTogglePlayAgain,
-  } = useGame();
+  const { game, handleCellClick } = useGame();
 
-  const inputRef = useRef(null);
+  const myTurns = game.history.filter(x => x.turn === game.turn);
+  const opponentTurns = game.history.filter(x => x.turn !== game.turn);
 
-  const cells = Array.from({ length: 100 }, (_, i) => (
+  console.log("myTurns", myTurns);
+  console.log("opponentTurns", opponentTurns);
+
+  const cells = Array.from({ length: ROWS * ROWS }, (_, i) => (
     <div
       key={`cell-${i}`}
-      className={`cell ${!primary && "cell-hoverable"}`}
+      className={`cell ${!primary ? "cell-hoverable" : ""}`}
+      style={{ width: `${CELL_SIZE}rem`, height: `${CELL_SIZE}rem` }}
       onClick={() => handleCellClick({ row: Math.floor(i / 10), col: i % 10 })}
     >
-      {i < 10 && <div className="marker marker-col">{String.fromCharCode(65 + i)}</div>}
-      {i % 10 === 0 && <div className="marker marker-row">{Math.floor(i / 10) + 1}</div>}
-      {primary && history?.find(x => x.turn !== turn && x.row === Math.floor(i / 10) && x.col === i % 10) && (
-        <div
-          className={history?.find(x => x.turn !== turn && x.row === Math.floor(i / 10) && x.col === i % 10).status}
-        ></div>
+      {i < ROWS && <div className="marker marker-col">{String.fromCharCode(65 + i)}</div>}
+      {i % ROWS === 0 && <div className="marker marker-row">{Math.floor(i / ROWS) + 1}</div>}
+
+      {primary && opponentTurns.find(x => x.row === Math.floor(i / 10) && x.col === i % 10) && (
+        <div className={`${opponentTurns.find(x => x.row === Math.floor(i / 10) && x.col === i % 10).status}`}></div>
       )}
-      {!primary && history?.find(x => x.turn === turn && x.row === Math.floor(i / 10) && x.col === i % 10) && (
-        <div
-          className={history?.find(x => x.turn === turn && x.row === Math.floor(i / 10) && x.col === i % 10).status}
-        ></div>
+
+      {!primary && myTurns.find(x => x.row === Math.floor(i / 10) && x.col === i % 10) && (
+        <div className={`${myTurns.find(x => x.row === Math.floor(i / 10) && x.col === i % 10).status}`}></div>
       )}
     </div>
   ));
 
   return (
-    <div className="grid">
+    <div
+      className="grid"
+      style={{
+        minWidth: `${CELL_SIZE * ROWS}rem`,
+        width: `${CELL_SIZE * ROWS}rem`,
+        minHeight: `${CELL_SIZE * ROWS}rem`,
+        height: `${CELL_SIZE * ROWS}rem`,
+      }}
+      onContextMenu={e => e.preventDefault()}
+    >
       {cells}
 
-      {!primary && opponentPlanes.map(plane => <Plane key={plane.id} plane={plane} />)}
+      {primary && game.player.planes.map(p => <Plane key={p.id} plane={p} />)}
+      {!primary && game.opponent.planes.map(p => <Plane key={`opponent-${p.id}`} plane={p} />)}
 
-      {primary && player?.planes?.map(plane => <Plane key={plane.id} plane={plane} />)}
+      {!primary && !game.opponent.connected && <UserNotJoined />}
 
-      {!primary && !opponent && (
-        <div className="join-by-code">
-          <input ref={inputRef} maxLength={4} type="text" placeholder="Your friend's code" />
-          <input type="button" value="Join" onClick={() => joinRoom(inputRef.current.value)} />
-        </div>
-      )}
-
-      {!gameStarted && primary && opponent && (
-        <div className="ready-container">
-          <div className={player.ready ? "ready" : "not-ready"}></div>
-          <button disabled={!player.planes.every(x => x.valid)} className="btn-ready" onClick={handleToggleReady}>
-            Ready
-          </button>
-        </div>
-      )}
-
-      {!gameStarted && !primary && opponent && (
-        <div className="ready-container">
-          <div className={opponent.ready ? "ready" : "not-ready"}></div>
-          Opponent
-        </div>
-      )}
-
-      {gameOver && primary && (
-        <div className="ready-container">
-          <div className={player.playAgain ? "ready" : "not-ready"}></div>
-          <button className="btn-ready" onClick={handleTogglePlayAgain}>
-            Play again
-          </button>
-        </div>
-      )}
-
-      {gameOver && !primary && (
-        <div className="ready-container">
-          <div className={opponent.playAgain ? "ready" : "not-ready"}></div>
-          Opponent
-        </div>
-      )}
+      {game.opponent.connected && <ActionsButtons primary={primary} />}
     </div>
   );
 }

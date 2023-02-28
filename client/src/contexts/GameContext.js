@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { rotations, defaultPlanes } from "../data/data";
+import { rotations } from "../data/data";
 
 const GameContext = createContext();
 
@@ -11,241 +11,168 @@ export function useGame() {
 export function GameProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
-  const [player, setPlayer] = useState({ ready: false, playAgain: false, planes: defaultPlanes });
-  const [opponent, setOpponent] = useState(null);
-  const [code, setCode] = useState(null);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [turn, setTurn] = useState(0);
-  const [now, setNow] = useState(null);
-  const [history, setHistory] = useState(null);
-  const [gameOver, setGameOver] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [opponentPlanes, setOpponentPlanes] = useState([]);
+  const [game, setGame] = useState({
+    code: "",
+    player: { planes: [], ready: false, playAgain: false },
+    opponent: { planes: [], ready: false, playAgain: false, connected: false },
+    started: false,
+    finished: false,
+    turn: 0,
+    now: 0,
+    winner: 0,
+    history: [],
+    message: {
+      error: false,
+      content: "",
+    },
+  });
 
   useEffect(() => {
-    const _socket = io(
-      process.env.NODE_ENV === "development" ? "http://localhost:3001" : "https://aviuane.onrender.com"
-    );
-
-    // const _socket = io("http://localhost:3001");
-
-    console.log(process.env.NODE_ENV);
-
-    _socket.on("connect", () => {
-      setSocket(_socket);
-
-      _socket.on("CONNECTED", ({ code }) => {
-        setCode(code);
-      });
-
-      _socket.on("ROOM_NOT_FOUND", () => {
-        alert("Room not found!");
-      });
-
-      _socket.on("CAPACITY_FULL", () => {
-        alert("Capacity is full!");
-      });
-
-      _socket.on("USER_IN_GAME", () => {
-        alert("Player is already in another game!");
-      });
-
-      _socket.on("USER_JOINED", () => {
-        setOpponent({ ready: false, playAgain: false });
-      });
-
-      _socket.on("USER_TOGGLE_READY", ({ id }) => {
-        if (id === _socket.id) {
-          setPlayer(curr => ({ ...curr, ready: !curr.ready }));
-        } else {
-          setOpponent(curr => ({ ...curr, ready: !curr.ready }));
-        }
-      });
-
-      _socket.on("PLAY_AGAIN", () => {
-        alert("YOOO");
-        setGameStarted(false);
-        setGameOver(false);
-        setOpponentPlanes([]);
-        setHistory(null);
-        player.planes.forEach(p => (p.destroyed = false));
-        setPlayer(curr => ({ ...curr, planes: defaultPlanes, ready: false }));
-        setOpponent(curr => ({ ...curr, ready: false }));
-      });
-
-      _socket.on("USER_TOGGLE_PLAY_AGAIN", ({ id }) => {
-        if (id === _socket.id) {
-          setPlayer(curr => ({ ...curr, playAgain: !curr.playAgain }));
-        } else {
-          setOpponent(curr => ({ ...curr, playAgain: !curr.playAgain }));
-        }
-      });
-
-      _socket.on("GAME_STARTED", ({ turn }) => {
-        setGameStarted(true);
-        setNow(turn);
-      });
-
-      _socket.on("ROUND_OVER", ({ nowTurn, history }) => {
-        console.log("round over");
-
-        setHistory(history);
-
-        // if (nowTurn === turn) {
-        //   console.log("aici");
-
-        //   player.planes.forEach(p => {
-        //     const lastHistory = history[history.length - 1];
-
-        //     if (lastHistory)
-        //   })
-        // }
-
-        setNow(nowTurn);
-      });
-
-      _socket.on("JUST_FOR_YOU", ({ planes }) => {
-        console.log("oh baby");
-        setPlayer(curr => {
-          return {
-            ...curr,
-            planes: planes,
-          };
-        });
-      });
-
-      _socket.on("GAME_OVER", ({ winner, opponentPlanes }) => {
-        setGameOver(true);
-        setWinner(winner);
-        setPlayer(curr => ({ ...curr, playAgain: false }));
-        setOpponent(curr => ({ ...curr, playAgain: false }));
-
-        // console.log("my turn is", turn);
-        // console.log("winner", winner);
-        // console.log("my planes are", players[turn].planes);
-        // console.log("opponent planes are", players[(turn + 1) % 2].planes);
-
-        setOpponentPlanes(opponentPlanes);
-      });
-
-      _socket.on("USER_LEFT", () => {
-        alert("Opponent disconnected");
-        setOpponent(null);
-        setGameStarted(false);
-      });
-
-      setLoading(false);
-    });
-    //   planes: [
-    //     {
-    //       id: 1,
-    //       head: { row: 0, col: 2 },
-    //       pieces: [
-    //         { row: 0, col: 2 },
-    //         { row: 1, col: 0 },
-    //         { row: 1, col: 1 },
-    //         { row: 1, col: 2 },
-    //         { row: 1, col: 3 },
-    //         { row: 1, col: 4 },
-    //         { row: 2, col: 2 },
-    //         { row: 3, col: 1 },
-    //         { row: 3, col: 2 },
-    //         { row: 3, col: 3 },
-    //       ],
-    //       posIndex: 0,
-    //       pos: "N",
-    //       valid: true,
-    //       destroyed: false,
-    //     },
-    //     {
-    //       id: 2,
-    //       head: { row: 0, col: 7 },
-    //       pieces: [
-    //         { row: 0, col: 7 },
-    //         { row: 1, col: 5 },
-    //         { row: 1, col: 6 },
-    //         { row: 1, col: 7 },
-    //         { row: 1, col: 8 },
-    //         { row: 1, col: 9 },
-    //         { row: 2, col: 7 },
-    //         { row: 3, col: 6 },
-    //         { row: 3, col: 7 },
-    //         { row: 3, col: 8 },
-    //       ],
-    //       posIndex: 0,
-    //       pos: "N",
-    //       valid: true,
-    //       destroyed: false,
-    //     },
-    //     {
-    //       id: 3,
-    //       head: { row: 6, col: 2 },
-    //       pieces: [
-    //         { row: 6, col: 2 },
-    //         { row: 7, col: 0 },
-    //         { row: 7, col: 1 },
-    //         { row: 7, col: 2 },
-    //         { row: 7, col: 3 },
-    //         { row: 7, col: 4 },
-    //         { row: 8, col: 2 },
-    //         { row: 9, col: 1 },
-    //         { row: 9, col: 2 },
-    //         { row: 9, col: 3 },
-    //       ],
-    //       posIndex: 0,
-    //       pos: "N",
-    //       valid: true,
-    //       destroyed: false,
-    //     },
-    //   ],
-    // });
+    const s = io(process.env.NODE_ENV === "development" ? "http://localhost:3001" : "https://aviuane.onrender.com");
+    setSocket(s);
+    setLoading(false);
 
     return () => {
-      console.log("useEffect cleanup");
-      _socket.disconnect();
-      setOpponent(null);
-      setGameStarted(false);
+      console.log("goodbye in useEffect cleanup");
+      s.disconnect();
     };
   }, []);
 
-  function rotatePlane(plane) {
-    if (player.ready) return;
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("CONNECTED", data => {
+      console.log("This is what I got from server", data);
+      console.log("\n");
+
+      const temp = { ...game };
+      temp.code = data.mainRoom;
+      temp.player.planes = data.planes;
+      temp.turn = data.turn;
+
+      setGame(temp);
+    });
+
+    socket.on("ROOM_NOT_FOUND", () => {
+      alert("ROOM NOT FOUND!!!");
+    });
+
+    socket.on("CAPACITY_FULL", () => {
+      alert("CAPACITY FULL!!");
+    });
+
+    socket.on("USER_IN_GAME", () => {
+      alert("USER IN GAME!");
+    });
+
+    socket.on("USER_JOINED", () => {
+      setGame(curr => ({
+        ...curr,
+        opponent: { ...curr.opponent, connected: true },
+        message: { error: false, content: "" },
+      }));
+    });
+
+    socket.on("USER_TOGGLE_READY", ({ id, ready }) => {
+      if (id === socket.id) {
+        setGame(curr => ({ ...curr, player: { ...curr.player, ready } }));
+      } else {
+        setGame(curr => ({ ...curr, opponent: { ...curr.opponent, ready } }));
+      }
+    });
+
+    socket.on("GAME_STARTED", ({ now }) => {
+      setGame(curr => ({ ...curr, started: true, now }));
+    });
+
+    socket.on("ROUND_OVER", ({ now, history }) => {
+      setGame(curr => ({ ...curr, now, history }));
+    });
+
+    socket.on("PLANES", ({ planes }) => {
+      setGame(curr => ({ ...curr, player: { ...curr.player, planes } }));
+    });
+
+    socket.on("GAME_OVER", ({ winner, opponentPlanes }) => {
+      setGame(curr => ({
+        ...curr,
+        finished: true,
+        winner: winner,
+        opponent: { ...curr.opponent, planes: opponentPlanes },
+      }));
+    });
+
+    socket.on("USER_TOGGLE_PLAY_AGAIN", ({ id, playAgain }) => {
+      if (id === socket.id) {
+        setGame(curr => ({ ...curr, player: { ...curr.player, playAgain } }));
+      } else {
+        setGame(curr => ({ ...curr, opponent: { ...curr.opponent, playAgain } }));
+      }
+    });
+
+    socket.on("PLAY_AGAIN", () => {
+      setGame(curr => ({
+        ...curr,
+        started: false,
+        finished: false,
+        player: {
+          ...curr.player,
+          planes: [...curr.player.planes.map(x => ({ ...x, destroyed: false }))],
+          ready: false,
+          playAgain: false,
+        },
+        opponent: { ...curr.opponent, ready: false, playAgain: false, planes: [] },
+        history: [],
+      }));
+    });
+
+    socket.on("USER_DISCONNECTED", () => {
+      setGame(curr => ({
+        ...curr,
+        player: { ...curr.player, ready: false },
+        opponent: { ...curr.opponent, ready: false, connected: false },
+        started: false,
+        turn: 0,
+        message: {
+          error: true,
+          content: "Opponent disconnected",
+        },
+      }));
+    });
+    // eslint-disable-next-line
+  }, [socket]);
+
+  const rotatePlane = plane => {
+    if (game.player.ready) return;
 
     plane.posIndex = (plane.posIndex + 1) % 4;
     plane.pos = rotations[plane.posIndex];
 
     updatePieces(plane);
 
-    checkIfValid(player.planes[0]);
-    checkIfValid(player.planes[1]);
-    checkIfValid(player.planes[2]);
+    game.player.planes.forEach(p => checkIfValid(p));
 
-    setPlayer(curr => {
-      return {
-        ...curr,
-        planes: player.planes,
-      };
-    });
-  }
+    setGame(curr => ({ ...curr }));
+  };
 
-  function checkIfValid(plane) {
+  const checkIfValid = plane => {
     plane.valid = true;
 
     if (plane.pieces.some(x => x.row < 0 || x.row > 9 || x.col < 0 || x.col > 9)) plane.valid = false;
 
-    const planes = player.planes.filter(x => x.id !== plane.id);
+    const planes = game.player.planes.filter(x => x.id !== plane.id);
 
-    planes.forEach(x => {
-      const overlapping = plane.pieces.some(y => x.pieces.some(z => z.row === y.row && z.col === y.col));
+    planes.forEach(p => {
+      const overlapping = plane.pieces.some(x => p.pieces.some(y => y.row === x.row && y.col === x.col));
 
       if (overlapping) {
         plane.valid = false;
-        x.valid = false;
+        p.valid = false;
       }
     });
-  }
+  };
 
-  function updatePieces(plane) {
+  const updatePieces = plane => {
     if (plane.pos === "N") {
       plane.pieces[0] = { row: plane.head.row, col: plane.head.col };
       plane.pieces[1] = { row: plane.head.row + 1, col: plane.head.col - 2 };
@@ -291,80 +218,53 @@ export function GameProvider({ children }) {
       plane.pieces[8] = { row: plane.head.row, col: plane.head.col + 3 };
       plane.pieces[9] = { row: plane.head.row + 1, col: plane.head.col + 3 };
     }
-  }
+  };
 
-  function handleOnStop(plane, ui) {
+  const handleOnStop = (plane, ui) => {
     plane.head.row = ui.y / 32;
     plane.head.col = ui.x / 32;
 
     updatePieces(plane);
 
-    checkIfValid(player.planes[0]);
-    checkIfValid(player.planes[1]);
-    checkIfValid(player.planes[2]);
+    game.player.planes.forEach(p => checkIfValid(p));
 
-    setPlayer(cur => {
-      return {
-        ...cur,
-        planes: player.planes,
-      };
-    });
-  }
+    setGame(curr => ({ ...curr }));
+  };
 
-  function joinRoom(inputCode) {
-    if (code === inputCode.toUpperCase()) return;
-
-    setTurn(1);
+  const handleJoin = inputCode => {
+    if (inputCode.toUpperCase() === game.code) return;
 
     socket.emit("JOIN", { code: inputCode });
-  }
+    setGame(curr => ({ ...curr, turn: 1 }));
+  };
 
   function handleToggleReady() {
-    console.log(player.ready);
-
-    if (!player.ready) {
-      socket.emit("USER_TOGGLE_READY", { planes: player.planes });
+    if (!game.player.ready) {
+      socket.emit("USER_TOGGLE_READY", { planes: game.player.planes });
     } else {
       socket.emit("USER_TOGGLE_READY");
     }
-
-    // setPlayer(prev => {
-    //   return {
-    //     ...prev,
-    //     ready: !prev.ready,
-    //   };
-    // });
   }
 
-  function handleCellClick({ row, col }) {
-    if (gameOver) return;
-    if (turn !== now) return;
-    if (history?.find(x => x.turn === turn && x.row === row && x.col === col)) return;
+  const handleCellClick = ({ row, col }) => {
+    if (game.finished || !game.started) return;
+    if (game.turn !== game.now) return;
+    if (game.history?.find(x => x.turn === game.turn && x.row === row && x.col === col)) return;
 
-    socket.emit("ROUND_OVER", { playerTurn: turn, row, col });
-  }
+    socket.emit("ROUND_OVER", { playerTurn: game.turn, row, col });
+  };
 
-  function handleTogglePlayAgain() {
+  const handleTogglePlayAgain = () => {
     socket.emit("USER_TOGGLE_PLAY_AGAIN");
-  }
+  };
 
   const value = {
-    player,
-    opponent,
-    code,
+    game,
     rotatePlane,
     handleOnStop,
-    joinRoom,
+    handleJoin,
     handleToggleReady,
-    socket,
-    gameStarted,
-    turn,
-    now,
     handleCellClick,
-    history,
-    gameOver,
-    winner,
-    opponentPlanes,
     handleTogglePlayAgain,
   };
 

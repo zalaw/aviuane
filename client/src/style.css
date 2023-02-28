@@ -13,26 +13,21 @@ html {
 body {
   display: flex;
   height: 100%;
+  padding: 2rem;
 }
 
 #root {
-  width: 100%;
-  height: 100%;
-  padding: 4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  margin: 0 auto;
 }
 
 .grid-container {
   display: flex;
-  gap: 8rem;
+  gap: 4rem;
   justify-content: center;
+  padding: 2rem;
 }
 
 .grid {
-  width: 20rem;
-  height: 20rem;
   display: flex;
   flex-wrap: wrap;
   box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.25);
@@ -46,29 +41,40 @@ body {
 }
 
 .cell {
-  width: 2rem;
-  height: 2rem;
   background-color: rgba(0, 0, 255, 0.05);
   box-shadow: 0 0 0 1px rgba(0, 0, 255, 0.25);
   padding: 0.25rem;
   position: relative;
 }
 
+.cell-hoverable {
+  cursor: pointer;
+}
+
+.cell-hoverable:hover {
+  background-color: rgba(0, 0, 255, 0.15);
+  box-shadow: 0 0 0 1px rgba(0, 0, 255, 1);
+}
+
 .marker {
   height: 100%;
   width: 100%;
+  left: 0;
+  top: 0;
   position: absolute;
   display: flex;
   justify-content: center;
   align-items: center;
+  user-select: none;
+  pointer-events: none;
 }
 
 .marker-col {
-  top: -2rem;
+  top: -100%;
 }
 
 .marker-row {
-  left: -2rem;
+  left: -100%;
 }
 
 .planes-container {
@@ -506,4 +512,34 @@ body {
 }
 
 .history-container {
+}
+
+.user-not-joined-container {
+  background-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.user-not-joined-container input,
+.user-not-joined-container button {
+  padding: 0.5rem;
+}
+
+.game-events-container {
+  text-align: center;
+  padding: 1rem;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+.plane-movable {
+  cursor: move;
 }
