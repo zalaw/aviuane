@@ -28,7 +28,11 @@ export function GameProvider({ children }) {
   });
 
   useEffect(() => {
-    const s = io(process.env.NODE_ENV === "development" ? "http://localhost:3001" : "https://aviuane.onrender.com");
+    const s = io(
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3001"
+        : process.env.RAILWAY_STATIC_URL || "https://aviuane.onrender.com"
+    );
     setSocket(s);
     setLoading(false);
 

@@ -1,14 +1,9 @@
-// import express from "express";
-// import { createServer } from "http";
-// import cors from "cors";
-// import { Server } from "socket.io";
-// import crypto from "crypto";
-
 const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const crypto = require("crypto");
 const cors = require("cors");
+const { defaultPlanes } = require("./planesData");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,7 +14,12 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://aviuane.onrender.com"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "https://aviuane.onrender.com",
+      "https://aviuane.up.railway.app/",
+    ],
     methods: ["GET", "POST"],
   },
 });
@@ -28,22 +28,27 @@ const rooms = new Map();
 
 io.on("connection", socket => {
   const code = generateCode();
+  const player = {
+    id: socket.id,
+    mainRoom: code,
+    planes: defaultPlanes,
+    ready: false,
+    playAgain: false,
+    turn: 0,
+  };
 
   socket.join(code);
 
   rooms.set(code, {
-    players: [{ id: socket.id, mainRoom: code, ready: false, playAgain: false, planes: null }],
+    players: [player],
     joinable: true,
     history: [],
   });
-  console.log(rooms);
 
-  socket.emit("CONNECTED", { code });
+  socket.emit("CONNECTED", player);
 
   socket.on("JOIN", ({ code }) => {
-    console.log("------------------------JOIN------------------------\n");
-
-    console.log("IN DEV");
+    code = code.toUpperCase();
 
     if (!rooms.get(code)) return socket.emit("ROOM_NOT_FOUND");
     if (rooms.get(code).players.length === 2) return socket.emit("CAPACITY_FULL");
@@ -53,32 +58,17 @@ io.on("connection", socket => {
     const myRoom = Array.from(socket.rooms.values())[1];
     const myRoomData = rooms.get(myRoom);
 
-    console.log("my room is", myRoom);
-    console.log("my room data is", myRoomData);
+    myRoomData.joinable = false;
 
     socket.join(code);
 
-    const x = rooms.get(code);
-    x.players.push({
-      id: socket.id,
-      mainRoom: Array.from(socket.rooms.values())[1],
-      ready: false,
-      playAgain: false,
-      planes: null,
-      history: [],
-    });
-
-    rooms.set(code, x);
-    rooms.set(myRoom, { ...myRoomData, joinable: false });
-
-    console.log("rooms", rooms);
+    const roomToJoin = rooms.get(code);
+    roomToJoin.players.push({ ...myRoomData.players[0], turn: 1 });
 
     io.to(code).emit("USER_JOINED");
   });
 
-  socket.on("USER_TOGGLE_READY", data => {
-    console.log("------------------------USER_TOGGLE_READY------------------------\n");
-
+  socket.on("USER_TOGGLE_READY", ({ planes }) => {
     const joinedRooms = Array.from(socket.rooms.values());
 
     const code = joinedRooms[2] || joinedRooms[1];
@@ -86,31 +76,16 @@ io.on("connection", socket => {
     const player = room.players.find(x => x.id === socket.id);
 
     player.ready = !player.ready;
+    player.planes = planes || null;
 
-    if (data) {
-      console.log("trebuie sa stochez");
-      player.planes = data.planes;
-    } else {
-      console.log("trebuie sa sterg");
-      player.planes = null;
-    }
-
-    console.log("room aici");
-    console.log(rooms.get(code));
-
-    io.to(code).emit("USER_TOGGLE_READY", { id: socket.id });
+    io.to(code).emit("USER_TOGGLE_READY", { id: socket.id, ready: player.ready });
 
     if (room.players.every(x => x.ready)) {
-      console.log("YOOO TOATA LUMEA E GATA!!!");
-      return io.to(code).emit("GAME_STARTED", { turn: Math.round(Math.random()) });
+      io.to(code).emit("GAME_STARTED", { now: Math.round(Math.random()) });
     }
-
-    console.log("\n-----------------------USER_TOGGLE_READY done-------------------------\n\n");
   });
 
   socket.on("USER_TOGGLE_PLAY_AGAIN", () => {
-    console.log("------------------------USER_TOGGLE_PLAY_AGAIN------------------------\n");
-
     const joinedRooms = Array.from(socket.rooms.values());
 
     const code = joinedRooms[2] || joinedRooms[1];
@@ -119,21 +94,19 @@ io.on("connection", socket => {
 
     player.playAgain = !player.playAgain;
 
-    io.to(code).emit("USER_TOGGLE_PLAY_AGAIN", { id: socket.id });
+    io.to(code).emit("USER_TOGGLE_PLAY_AGAIN", { id: socket.id, playAgain: player.playAgain });
 
     if (room.players.every(x => x.playAgain)) {
       room.history = [];
       room.players[0].ready = false;
+      room.players[0].playAgain = false;
       room.players[1].ready = false;
+      room.players[1].playAgain = false;
       io.to(code).emit("PLAY_AGAIN");
     }
-
-    console.log("\n-----------------------USER_TOGGLE_PLAY_AGAIN done-------------------------\n\n");
   });
 
   socket.on("ROUND_OVER", ({ playerTurn, row, col }) => {
-    console.log("------------------------ROUND_OVER------------------------\n");
-
     const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
 
     const code = joinedRoom || myRoom;
@@ -148,7 +121,6 @@ io.on("connection", socket => {
 
         if (piece) {
           hit = true;
-          piece.hit = true;
         }
 
         if (p.head.row === row && p.head.col === col) {
@@ -158,18 +130,17 @@ io.on("connection", socket => {
       }
     });
 
-    io.to(room.players[(playerTurn + 1) % 2].id).emit("JUST_FOR_YOU", {
+    io.to(room.players[(playerTurn + 1) % 2].id).emit("PLANES", {
       planes: room.players[(playerTurn + 1) % 2].planes,
     });
 
     room.history.push({ turn: playerTurn, row, col, status: head ? "head-hit" : hit ? "hit" : "miss" });
 
     io.to(code).emit("ROUND_OVER", {
-      nowTurn: (playerTurn + 1) % 2,
+      now: (playerTurn + 1) % 2,
       history: room.history,
     });
 
-    // let allDestroyed = room.players[playerTurn].planes.every(x => x.destroyed);
     let allDestroyed = room.players[0].planes.every(x => x.destroyed);
 
     if (allDestroyed) {
@@ -184,25 +155,6 @@ io.on("connection", socket => {
       return io.to(room.players[1].id).emit("GAME_OVER", { winner: 1, opponentPlanes: room.players[0].planes });
     }
 
-    // if (allDestroyed) {
-    //   io.to(room.players[(playerTurn + 1) % 2].id).emit("GAME_OVER", {
-    //     winner: (playerTurn + 1) % 2,
-    //     opponentPlanes: room.players[playerTurn].planes,
-    //   });
-    //   return io
-    //     .to(room.players[playerTurn].id)
-    //     .emit("GAME_OVER", { winner: (playerTurn + 1) % 2, opponentPlanes: room.players[(playerTurn + 1) % 2].planes });
-    // }
-
-    // if (allDestroyed) {
-    //   return io.to(code).emit("GAME_OVER", {
-    //     winner: (playerTurn + 1) % 2,
-    //     players: room.players,
-    //   });
-    // }
-
-    // allDestroyed = room.players[(playerTurn + 1) % 2].planes.every(x => x.destroyed);
-
     allDestroyed = room.players[1].planes.every(x => x.destroyed);
 
     if (allDestroyed) {
@@ -216,51 +168,35 @@ io.on("connection", socket => {
       });
       return io.to(room.players[1].id).emit("GAME_OVER", { winner: 0, opponentPlanes: room.players[0].planes });
     }
-
-    // if (allDestroyed) {
-    //   return io.to(code).emit("GAME_OVER", {
-    //     winner: playerTurn,
-    //     players: room.players,
-    //   });
-    // }
-
-    // if (allDestroyed) {
-    //   io.to(room.players[(playerTurn + 1) % 2].id).emit("GAME_OVER", {
-    //     winner: playerTurn,
-    //     opponentPlanes: room.players[(playerTurn + 1) % 2].planes,
-    //   });
-    //   return io
-    //     .to(room.players[playerTurn].id)
-    //     .emit("GAME_OVER", { winner: playerTurn, opponentPlanes: room.players[playerTurn].planes });
-    // }
-
-    console.log("\n-----------------------ROUND_OVER done-------------------------\n\n");
   });
 
   socket.on("disconnecting", () => {
-    console.log("------------------------disconnecting------------------------\n");
-
     const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
-
-    console.log("myRoom", myRoom);
-    console.log("joinedRoom", joinedRoom);
 
     if (joinedRoom) {
       const data = rooms.get(joinedRoom);
       data.players = data.players.filter(x => x.id !== socket.id);
+      data.players[0].ready = false;
 
-      console.log("now data is", data);
-
-      rooms.set(joinedRoom, data);
+      io.to(data.players[0].id).emit("USER_DISCONNECTED");
     } else if (rooms.get(myRoom).players.length === 2) {
-      const p = rooms.get(myRoom).players[1].mainRoom;
-      const x = rooms.get(p);
-      rooms.set(p, { ...x, joinable: true });
+      const opponentMainRoomCode = rooms.get(myRoom).players[1].mainRoom;
+      const opponentMainRoom = rooms.get(opponentMainRoomCode);
+      opponentMainRoom.joinable = true;
+      opponentMainRoom.players[0].ready = false;
+
+      io.of("/")
+        .in(opponentMainRoom.players[0].id)
+        .fetchSockets()
+        .then(data => {
+          const s = data.find(s => s.id.toString() === opponentMainRoom.players[0].id);
+          s.leave(myRoom);
+          io.to(opponentMainRoom.players[0].id).emit("USER_DISCONNECTED");
+        });
     }
 
+    socket.leave(joinedRoom || myRoom);
     rooms.delete(myRoom);
-
-    console.log("\n-----------------------disconnecting done-------------------------\n\n");
   });
 });
 
@@ -291,20 +227,3 @@ server.listen(PORT, () => {
 
   console.log(`Server running at http://localhost:${PORT}`);
 });
-
-// const express = require("express");
-// const { createServer } = require("http");
-// const { Server } = require("socket.io");
-
-// const app = express();
-// const httpServer = createServer(app);
-
-// const io = new Server(httpServer);
-
-// io.on("connect", socket => {
-//   console.log("user connected", socket.id);
-// });
-
-// app.use(express.static("public"));
-
-// httpServer.listen(5000);
