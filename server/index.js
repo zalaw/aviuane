@@ -14,12 +14,13 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "https://aviuane.onrender.com",
-      "https://aviuane.up.railway.app/",
-    ],
+    // origin: [
+    //   "http://localhost:3000",
+    //   "http://localhost:3001",
+    //   "https://aviuane.onrender.com",
+    //   "https://aviuane.up.railway.app/",
+    // ],
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
