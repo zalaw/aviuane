@@ -36,7 +36,7 @@ export function GameProvider({ children }) {
     const s = io(
       process.env.NODE_ENV === "development"
         ? "http://localhost:3001"
-        : process.env.RAILWAY_STATIC_URL || "https://aviuane.onrender.com"
+        : "https://aviuane.up.railway.app/" || "https://aviuane.onrender.com"
     );
     setSocket(s);
     setLoading(false);
