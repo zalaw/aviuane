@@ -12,6 +12,8 @@ const GameEvents = () => {
         </p>
       )}
 
+      {game.message.content && <p className={`${game.message.error ? "error" : ""}`}>{game.message.content}</p>}
+
       {game.opponent.connected && (
         <p>
           {game.started && game.finished

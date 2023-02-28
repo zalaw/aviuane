@@ -69,7 +69,7 @@ io.on("connection", socket => {
     io.to(code).emit("USER_JOINED");
   });
 
-  socket.on("USER_TOGGLE_READY", ({ planes }) => {
+  socket.on("USER_TOGGLE_READY", data => {
     const joinedRooms = Array.from(socket.rooms.values());
 
     const code = joinedRooms[2] || joinedRooms[1];
@@ -77,7 +77,7 @@ io.on("connection", socket => {
     const player = room.players.find(x => x.id === socket.id);
 
     player.ready = !player.ready;
-    player.planes = planes || null;
+    player.planes = data?.planes || null;
 
     io.to(code).emit("USER_TOGGLE_READY", { id: socket.id, ready: player.ready });
 

@@ -16,7 +16,7 @@ function App() {
         <Grid />
       </div>
 
-      <pre>{JSON.stringify(game, null, 2)}</pre>
+      {/* <pre>{JSON.stringify(game, null, 2)}</pre> */}
     </>
   );
 

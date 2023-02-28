@@ -138,10 +138,16 @@ export function GameProvider({ children }) {
     socket.on("USER_DISCONNECTED", () => {
       setGame(curr => ({
         ...curr,
-        player: { ...curr.player, ready: false },
-        opponent: { ...curr.opponent, ready: false, connected: false },
+        player: {
+          ...curr.player,
+          planes: [...curr.player.planes.map(x => ({ ...x, destroyed: false }))],
+          ready: false,
+          playAgain: false,
+        },
+        opponent: { ...curr.opponent, planes: [], ready: false, playAgain: false, connected: false },
         started: false,
         turn: 0,
+        history: [],
         message: {
           error: true,
           content: "Opponent disconnected",
