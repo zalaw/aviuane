@@ -28,6 +28,11 @@ export function GameProvider({ children }) {
   });
 
   useEffect(() => {
+    console.log("HELLO TEST!");
+    console.log("RAILWAY_STATIC_URL", process.env.RAILWAY_STATIC_URL);
+
+    console.log(process.env);
+
     const s = io(
       process.env.NODE_ENV === "development"
         ? "http://localhost:3001"
