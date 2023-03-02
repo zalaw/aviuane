@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import ActionsButtons from "./components/ActionsButtons";
 import GameEvents from "./components/GameEvents";
 import Navbar from "./components/Navbar";
 import { useGame } from "./contexts/GameContext";
@@ -8,7 +7,7 @@ import Grid from "./Grid";
 
 function App() {
   const { darkTheme } = useUserInterface();
-  const { game, resetPlaneSelected } = useGame();
+  const { resetPlaneSelected } = useGame();
 
   useEffect(() => {
     const handleClickOutside = e => {
