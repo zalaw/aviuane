@@ -3,7 +3,7 @@ import { useGame } from "./contexts/GameContext";
 import Draggable from "react-draggable";
 
 export default function Plane({ plane }) {
-  const { game, handleOnStop, rotatePlane } = useGame();
+  const { game, handleOnStop, rotatePlane, selectPlane } = useGame();
 
   const handleRotatePlane = (e, plane) => {
     e.preventDefault();
@@ -19,9 +19,10 @@ export default function Plane({ plane }) {
       onStop={(e, ui) => handleOnStop(plane, ui)}
     >
       <div
-        className={`plane ${!game.player.ready ? "plane-movable" : ""} ${plane.pos} ${
-          !plane.valid ? "plane-not-valid" : ""
-        } ${plane.destroyed ? "plane-destroyed" : ""}`}
+        className={`plane ${game.planeSelected?.id === plane.id ? "plane-selected" : ""} ${
+          !game.player.ready ? "plane-movable" : ""
+        } ${plane.pos} ${!plane.valid ? "plane-not-valid" : ""} ${plane.destroyed ? "plane-destroyed" : ""}`}
+        onClick={() => selectPlane(plane)}
         onContextMenu={e => handleRotatePlane(e, plane)}
       >
         <div className="plane-piece head h1"></div>

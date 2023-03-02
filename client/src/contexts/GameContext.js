@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
-import { rotations } from "../data/data";
+import { rotations, defaultPlanes } from "../data/data";
 
 const GameContext = createContext();
 
@@ -13,14 +13,16 @@ export function GameProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [game, setGame] = useState({
     code: "",
-    player: { planes: [], ready: false, playAgain: false },
+    player: { planes: defaultPlanes, ready: false, playAgain: false },
     opponent: { planes: [], ready: false, playAgain: false, connected: false },
+    planeSelected: null,
     started: false,
     finished: false,
     turn: 0,
     now: 0,
     winner: 0,
     history: [],
+    fills: [],
     message: {
       error: false,
       content: "",
@@ -28,11 +30,6 @@ export function GameProvider({ children }) {
   });
 
   useEffect(() => {
-    console.log("HELLO TEST!");
-    console.log("RAILWAY_STATIC_URL", process.env.RAILWAY_STATIC_URL);
-
-    console.log(process.env);
-
     const s = io(
       process.env.NODE_ENV === "development"
         ? "http://localhost:3001"
@@ -51,27 +48,23 @@ export function GameProvider({ children }) {
     if (!socket) return;
 
     socket.on("CONNECTED", data => {
-      console.log("This is what I got from server", data);
-      console.log("\n");
-
       const temp = { ...game };
       temp.code = data.mainRoom;
-      temp.player.planes = data.planes;
       temp.turn = data.turn;
 
       setGame(temp);
     });
 
     socket.on("ROOM_NOT_FOUND", () => {
-      alert("ROOM NOT FOUND!!!");
+      setGame(curr => ({ ...curr, message: { error: true, content: "Room not found!" } }));
     });
 
     socket.on("CAPACITY_FULL", () => {
-      alert("CAPACITY FULL!!");
+      setGame(curr => ({ ...curr, message: { error: true, content: "Capacity is full!" } }));
     });
 
     socket.on("USER_IN_GAME", () => {
-      alert("USER IN GAME!");
+      setGame(curr => ({ ...curr, message: { error: true, content: "Opponent is already in a game!" } }));
     });
 
     socket.on("USER_JOINED", () => {
@@ -132,6 +125,7 @@ export function GameProvider({ children }) {
         },
         opponent: { ...curr.opponent, ready: false, playAgain: false, planes: [] },
         history: [],
+        fills: [],
       }));
     });
 
@@ -148,6 +142,7 @@ export function GameProvider({ children }) {
         started: false,
         turn: 0,
         history: [],
+        fills: [],
         message: {
           error: true,
           content: "Opponent disconnected",
@@ -157,10 +152,12 @@ export function GameProvider({ children }) {
     // eslint-disable-next-line
   }, [socket]);
 
-  const rotatePlane = plane => {
+  const rotatePlane = (plane, dir = 1) => {
+    setGame(curr => ({ ...curr, planeSelected: plane }));
+
     if (game.player.ready) return;
 
-    plane.posIndex = (plane.posIndex + 1) % 4;
+    plane.posIndex = dir === 1 ? (plane.posIndex + 1) % 4 : (plane.posIndex + 3) % 4;
     plane.pos = rotations[plane.posIndex];
 
     updatePieces(plane);
@@ -269,8 +266,46 @@ export function GameProvider({ children }) {
     socket.emit("ROUND_OVER", { playerTurn: game.turn, row, col });
   };
 
+  const toggleFill = ({ id, row, col }) => {
+    if (!game.started) return;
+
+    if (game.fills.find(x => x.id === id)) {
+      setGame(curr => ({ ...curr, fills: [...curr.fills.filter(x => x.id !== id)] }));
+    } else {
+      setGame(curr => ({ ...curr, fills: [...curr.fills, { id, row, col }] }));
+    }
+  };
+
   const handleTogglePlayAgain = () => {
     socket.emit("USER_TOGGLE_PLAY_AGAIN");
+  };
+
+  const selectPlane = plane => {
+    if (game.started) return;
+    if (game.player.ready) return;
+    setGame(curr => ({ ...curr, planeSelected: plane }));
+  };
+
+  const resetPlaneSelected = () => {
+    setGame(curr => ({ ...curr, planeSelected: null }));
+  };
+
+  const handleLeave = () => {
+    socket.emit("LEAVE");
+    setGame(curr => ({
+      ...curr,
+      player: {
+        ...curr.player,
+        planes: [...curr.player.planes.map(x => ({ ...x, destroyed: false }))],
+        ready: false,
+        playAgain: false,
+      },
+      opponent: { ...curr.opponent, planes: [], ready: false, playAgain: false, connected: false },
+      started: false,
+      turn: 0,
+      history: [],
+      fills: [],
+    }));
   };
 
   const value = {
@@ -280,7 +315,11 @@ export function GameProvider({ children }) {
     handleJoin,
     handleToggleReady,
     handleCellClick,
+    toggleFill,
     handleTogglePlayAgain,
+    selectPlane,
+    resetPlaneSelected,
+    handleLeave,
   };
 
   return <GameContext.Provider value={value}>{!loading && children}</GameContext.Provider>;

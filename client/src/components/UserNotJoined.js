@@ -1,17 +1,23 @@
 import React, { useState } from "react";
 import { useGame } from "../contexts/GameContext";
+import CustomButton from "./CustomButton";
+import { MdOutlineChevronRight } from "react-icons/md";
+import CustomInput from "./CustomInput";
 
 const UserNotJoined = () => {
-  const { handleJoin } = useGame();
+  const { game, handleJoin } = useGame();
 
   const [inputValue, setInputValue] = useState("");
 
   return (
     <div className="user-not-joined-container">
-      <input type="text" placeholder="Your friend's code" maxLength={4} onChange={e => setInputValue(e.target.value)} />
-      <button onClick={() => handleJoin(inputValue)} disabled={inputValue.length !== 4}>
-        Join
-      </button>
+      <CustomInput onChange={e => setInputValue(e.target.value)} maxLength={4} placeholder={"yooo"} />
+      <CustomButton
+        onClick={() => handleJoin(inputValue)}
+        disabled={inputValue.length !== 4 || inputValue.toUpperCase() === game.code}
+        text="Join"
+        icon={<MdOutlineChevronRight />}
+      />
     </div>
   );
 };
