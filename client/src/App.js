@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import { useGame } from "./contexts/GameContext";
 import { useUserInterface } from "./contexts/UserInterfaceContext";
 import Grid from "./Grid";
+import Plane from "./Plane";
 
 function App() {
   const { darkTheme } = useUserInterface();

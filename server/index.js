@@ -173,14 +173,12 @@ io.on("connection", socket => {
   });
 
   socket.on("LEAVE", () => {
-    // WORK HERE
     const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
 
     const mr = rooms.get(myRoom);
     const jr = rooms.get(joinedRoom);
 
     if (jr) {
-      // jr.players = jr.players.filter(x => x.id !== socket.id);
       jr.players.pop();
       mr.joinable = true;
       socket.leave(joinedRoom);
@@ -195,7 +193,6 @@ io.on("connection", socket => {
           const opponentMainRoom = mr.players[1].mainRoom;
           const opponentRoom = rooms.get(opponentMainRoomCode);
 
-          // mr.players = mr.players.filter(x => x.id !== socket.id);
           opponentRoom.joinable = true;
           opponentRoom.players[0].ready = false;
           opponentRoom.players[0].playAgain = false;
@@ -209,48 +206,6 @@ io.on("connection", socket => {
 
     console.log("mr", mr);
     console.log("\n\njr", jr);
-
-    // io.to(joinedRoom || myRoom).emit("USER_DISCONNECTED");
-
-    return;
-    // const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
-
-    // const mr = rooms.get(myRoom);
-
-    // mr.players = mr.players.filter(x => x.id !== socket.id);
-    // mr.joinable = true;
-
-    // rooms.get(myRoom).joinable = true;
-
-    // if (joinedRoom) {
-    //   const data = rooms.get(joinedRoom);
-    //   data.players = data.players.filter(x => x.id !== socket.id);
-    //   data.players[0].ready = false;
-
-    //   io.to(data.players[0].id).emit("USER_DISCONNECTED");
-    // } else if (rooms.get(myRoom).players.length === 2) {
-    //   const opponentMainRoomCode = rooms.get(myRoom).players[1].mainRoom;
-    //   const opponentMainRoom = rooms.get(opponentMainRoomCode);
-    //   opponentMainRoom.joinable = true;
-    //   opponentMainRoom.players[0].ready = false;
-
-    //   io.of("/")
-    //     .in(opponentMainRoom.players[0].id)
-    //     .fetchSockets()
-    //     .then(data => {
-    //       const s = data.find(s => s.id.toString() === opponentMainRoom.players[0].id);
-    //       s.leave(myRoom);
-    //       io.to(opponentMainRoom.players[0].id).emit("USER_DISCONNECTED");
-    //     });
-    // }
-
-    // console.log("myRoom", rooms.get(myRoom));
-    // console.log("joinedRoom", rooms.get(joinedRoom));
-
-    // // io.to(joinedRoom || myRoom).emit("USER_DISCONNECTED");
-
-    // socket.leave(joinedRoom || myRoom);
-    // // rooms.delete(myRoom);
   });
 
   socket.on("disconnecting", () => {
