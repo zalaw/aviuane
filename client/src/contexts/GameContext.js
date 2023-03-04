@@ -22,7 +22,6 @@ export function GameProvider({ children }) {
     now: 0,
     winner: 0,
     history: [],
-    fills: [],
     message: {
       error: false,
       content: "",
@@ -36,7 +35,6 @@ export function GameProvider({ children }) {
         : "https://aviuane.up.railway.app/" || "https://aviuane.onrender.com"
     );
     setSocket(s);
-    setLoading(false);
 
     return () => {
       console.log("goodbye in useEffect cleanup");
@@ -48,11 +46,8 @@ export function GameProvider({ children }) {
     if (!socket) return;
 
     socket.on("CONNECTED", data => {
-      const temp = { ...game };
-      temp.code = data.mainRoom;
-      temp.turn = data.turn;
-
-      setGame(temp);
+      setGame(curr => ({ ...curr, code: data.mainRoom, turn: data.turn }));
+      setLoading(false);
     });
 
     socket.on("ROOM_NOT_FOUND", () => {
@@ -125,7 +120,6 @@ export function GameProvider({ children }) {
         },
         opponent: { ...curr.opponent, ready: false, playAgain: false, planes: [] },
         history: [],
-        fills: [],
       }));
     });
 
@@ -142,7 +136,6 @@ export function GameProvider({ children }) {
         started: false,
         turn: 0,
         history: [],
-        fills: [],
         message: {
           error: true,
           content: "Opponent disconnected",
@@ -266,16 +259,6 @@ export function GameProvider({ children }) {
     socket.emit("ROUND_OVER", { playerTurn: game.turn, row, col });
   };
 
-  const toggleFill = ({ id, row, col }) => {
-    if (!game.started) return;
-
-    if (game.fills.find(x => x.id === id)) {
-      setGame(curr => ({ ...curr, fills: [...curr.fills.filter(x => x.id !== id)] }));
-    } else {
-      setGame(curr => ({ ...curr, fills: [...curr.fills, { id, row, col }] }));
-    }
-  };
-
   const handleTogglePlayAgain = () => {
     socket.emit("USER_TOGGLE_PLAY_AGAIN");
   };
@@ -304,23 +287,22 @@ export function GameProvider({ children }) {
       started: false,
       turn: 0,
       history: [],
-      fills: [],
     }));
   };
 
   const value = {
     game,
+    loading,
     rotatePlane,
     handleOnStop,
     handleJoin,
     handleToggleReady,
     handleCellClick,
-    toggleFill,
     handleTogglePlayAgain,
     selectPlane,
     resetPlaneSelected,
     handleLeave,
   };
 
-  return <GameContext.Provider value={value}>{!loading && children}</GameContext.Provider>;
+  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

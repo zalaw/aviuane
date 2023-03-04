@@ -6,30 +6,18 @@ import Plane from "./Plane";
 import "./style.css";
 
 const ROWS = 10;
-const CELL_SIZE = 2;
 
 export default function Grid({ primary = false }) {
-  const { game, handleCellClick, toggleFill } = useGame();
+  const { game, handleCellClick } = useGame();
 
   const myTurns = game.history.filter(x => x.turn === game.turn);
   const opponentTurns = game.history.filter(x => x.turn !== game.turn);
 
-  const handleCellRightClick = (e, { id, row, col }) => {
-    e.preventDefault();
-    if (primary) return;
-    console.log("okkk");
-    toggleFill({ id, row, col });
-  };
-
   const cells = Array.from({ length: ROWS * ROWS }, (_, i) => (
     <div
       key={`cell-${i}`}
-      className={`cell ${!primary ? "cell-hoverable" : ""} ${
-        !primary && game.fills.find(x => x.row === Math.floor(i / 10) && x.col === i % 10) ? "cell-fill" : ""
-      }`}
-      style={{ width: `${CELL_SIZE}rem`, height: `${CELL_SIZE}rem` }}
-      onClick={() => handleCellClick({ row: Math.floor(i / 10), col: i % 10 })}
-      onContextMenu={e => handleCellRightClick(e, { id: i, row: Math.floor(i / 10), col: i % 10 })}
+      className={`cell ${!primary ? "cell-hoverable" : ""}`}
+      onClick={e => !primary && handleCellClick({ row: Math.floor(i / 10), col: i % 10 })}
     >
       {i < ROWS && <div className="marker marker-col">{String.fromCharCode(65 + i)}</div>}
       {i % ROWS === 0 && <div className="marker marker-row">{Math.floor(i / ROWS) + 1}</div>}
@@ -45,22 +33,15 @@ export default function Grid({ primary = false }) {
   ));
 
   return (
-    <div
-      className="grid"
-      style={{
-        minWidth: `${CELL_SIZE * ROWS}rem`,
-        width: `${CELL_SIZE * ROWS}rem`,
-        minHeight: `${CELL_SIZE * ROWS}rem`,
-        height: `${CELL_SIZE * ROWS}rem`,
-      }}
-    >
-      {cells}
+    <div className="grid-outer">
+      <div className="grid">
+        {cells}
 
-      {primary && game.player.planes.map(p => <Plane key={p.id} plane={p} />)}
-      {!primary && game.opponent.planes.map(p => <Plane key={`opponent-${p.id}`} plane={p} />)}
+        {primary && game.player.planes.map(p => <Plane key={p.id} plane={p} />)}
+        {!primary && game.opponent.planes.map(p => <Plane key={`opponent-${p.id}`} plane={p} />)}
 
-      {!primary && !game.opponent.connected && <UserNotJoined />}
-
+        {!primary && !game.opponent.connected && <UserNotJoined />}
+      </div>
       {<ActionsButtons primary={primary} />}
     </div>
   );

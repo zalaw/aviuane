@@ -23,6 +23,7 @@ export default function Plane({ plane }) {
           !game.player.ready ? "plane-movable" : ""
         } ${plane.pos} ${!plane.valid ? "plane-not-valid" : ""} ${plane.destroyed ? "plane-destroyed" : ""}`}
         onClick={() => selectPlane(plane)}
+        onTouchStart={() => selectPlane(plane)}
         onContextMenu={e => handleRotatePlane(e, plane)}
       >
         <div className="plane-piece head h1"></div>

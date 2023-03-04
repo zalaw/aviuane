@@ -178,9 +178,13 @@ io.on("connection", socket => {
     const mr = rooms.get(myRoom);
     const jr = rooms.get(joinedRoom);
 
+    mr.players[0].ready = false;
+    mr.players[0].playAgain = false;
+    mr.players[0].turn = 0;
+    mr.joinable = true;
+
     if (jr) {
       jr.players.pop();
-      mr.joinable = true;
       socket.leave(joinedRoom);
       io.to(joinedRoom).emit("USER_DISCONNECTED");
     } else {
@@ -190,7 +194,7 @@ io.on("connection", socket => {
         .then(data => {
           const s = data.find(s => s.id.toString() === mr.players[1].id);
           s.leave(myRoom);
-          const opponentMainRoom = mr.players[1].mainRoom;
+          const opponentMainRoomCode = mr.players[1].mainRoom;
           const opponentRoom = rooms.get(opponentMainRoomCode);
 
           opponentRoom.joinable = true;
@@ -200,12 +204,9 @@ io.on("connection", socket => {
 
           mr.players.pop();
 
-          io.to(opponentMainRoom).emit("USER_DISCONNECTED");
+          io.to(opponentMainRoomCode).emit("USER_DISCONNECTED");
         });
     }
-
-    console.log("mr", mr);
-    console.log("\n\njr", jr);
   });
 
   socket.on("disconnecting", () => {
@@ -222,6 +223,7 @@ io.on("connection", socket => {
       const opponentMainRoom = rooms.get(opponentMainRoomCode);
       opponentMainRoom.joinable = true;
       opponentMainRoom.players[0].ready = false;
+      opponentMainRoom.players[0].playAgain = false;
 
       io.of("/")
         .in(opponentMainRoom.players[0].id)

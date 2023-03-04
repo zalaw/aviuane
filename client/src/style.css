@@ -21,13 +21,54 @@ body:has(.dark) {
   background-color: rgb(24, 24, 27);
 }
 
+body:has(.body-loading) {
+  overflow: hidden;
+}
+
 #root {
   height: 100%;
 }
 
+.loader {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  zoom: 0.5;
+}
+
+.loader-center {
+  width: 15rem;
+  height: 15rem;
+  position: relative;
+  animation: rotation 2s linear infinite;
+}
+
+.plane-loader {
+  transform-origin: 2rem;
+}
+
+.plane-loader .plane-piece {
+  background-color: rgba(255, 255, 255, 0.35);
+  border-color: white !important;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .grid-container {
   display: flex;
-  gap: 4rem;
+  gap: 8rem;
   justify-content: center;
   padding: 2rem;
   flex-wrap: wrap;
@@ -38,6 +79,16 @@ body:has(.dark) {
   flex-wrap: wrap;
   box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.25);
   position: relative;
+  width: 20rem;
+  height: 20rem;
+  min-width: 20rem;
+  min-height: 20rem;
+}
+
+.grid-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .code {
@@ -51,6 +102,8 @@ body:has(.dark) {
   box-shadow: 0 0 0 1px rgba(0, 0, 255, 0.25);
   padding: 0.25rem;
   position: relative;
+  width: 2rem;
+  height: 2rem;
 }
 
 .cell-hoverable {
@@ -569,6 +622,7 @@ body:has(.dark) {
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .custom-button {
@@ -681,7 +735,7 @@ body:has(.dark) {
 }
 
 .actions-buttons-container {
-  width: 100%;
+  width: 20rem;
 }
 
 .row-item {
@@ -716,4 +770,14 @@ body:has(.dark) {
 
 .plane-selected .plane-piece {
   background-color: rgba(251, 93, 0, 0.5) !important;
+}
+
+@media only screen and (max-width: 425px) {
+  html {
+    zoom: 0.75;
+  }
+
+  .grid-container {
+    gap: 2rem;
+  }
 }
