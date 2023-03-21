@@ -2,31 +2,20 @@ import React from "react";
 import { useGame } from "../contexts/GameContext";
 
 const GameEvents = () => {
-  const { game } = useGame();
+  const { game, myTurn, errorMessage } = useGame();
 
   return (
     <div className="game-events-container">
-      {!game.started && !game.opponent.connected && (
+      {!game.started && game.players.length === 1 && (
         <p>
           Your code is <b>{game.code}</b>
         </p>
       )}
 
-      {game.message.content && <p className={`${game.message.error ? "error" : ""}`}>{game.message.content}</p>}
+      {errorMessage && <p className="error">{errorMessage}</p>}
 
-      {game.opponent.connected && (
-        <p>
-          {game.started && game.finished
-            ? game.winner === game.turn
-              ? "GGEZ"
-              : "Better luck next time"
-            : !game.started
-            ? null
-            : game.turn === game.now
-            ? "Your turn"
-            : "Waiting for opponent"}
-        </p>
-      )}
+      {game.turn !== null && <p>{game.turn === myTurn ? "Your turn" : "Waiting for opponent"}</p>}
+      {game.winner !== null && <p>{game.winner === myTurn ? "GGEZ" : "Better luck next time"}</p>}
     </div>
   );
 };

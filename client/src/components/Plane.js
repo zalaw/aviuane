@@ -1,9 +1,9 @@
 import React from "react";
-import { useGame } from "./contexts/GameContext";
+import { useGame } from "../contexts/GameContext";
 import Draggable from "react-draggable";
 
 export default function Plane({ plane }) {
-  const { game, handleOnStop, rotatePlane, selectPlane } = useGame();
+  const { game, myTurn, planeSelected, handleOnStop, rotatePlane, selectPlane } = useGame();
 
   const handleRotatePlane = (e, plane) => {
     e.preventDefault();
@@ -12,15 +12,15 @@ export default function Plane({ plane }) {
 
   return (
     <Draggable
-      disabled={game.player.ready}
+      disabled={game.players[myTurn].ready}
       bounds="parent"
       grid={[32, 32]}
       defaultPosition={{ x: plane.head.col * 32, y: plane.head.row * 32 }}
       onStop={(e, ui) => handleOnStop(plane, ui)}
     >
       <div
-        className={`plane ${game.planeSelected?.id === plane.id ? "plane-selected" : ""} ${
-          !game.player.ready ? "plane-movable" : ""
+        className={`plane ${planeSelected?.id === plane.id ? "plane-selected" : ""} ${
+          !game.players[myTurn].ready ? "plane-movable" : ""
         } ${plane.pos} ${!plane.valid ? "plane-not-valid" : ""} ${plane.destroyed ? "plane-destroyed" : ""}`}
         onClick={() => selectPlane(plane)}
         onTouchStart={() => selectPlane(plane)}

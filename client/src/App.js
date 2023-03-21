@@ -4,11 +4,11 @@ import Loader from "./components/Loader";
 import Navbar from "./components/Navbar";
 import { useGame } from "./contexts/GameContext";
 import { useUserInterface } from "./contexts/UserInterfaceContext";
-import Grid from "./Grid";
+import Grid from "./components/Grid";
 
 function App() {
   const { darkTheme } = useUserInterface();
-  const { loading, resetPlaneSelected } = useGame();
+  const { myTurn, loading, resetPlaneSelected } = useGame();
 
   useEffect(() => {
     const handleClickOutside = e => {
@@ -24,7 +24,7 @@ function App() {
     window.addEventListener("click", handleClickOutside);
 
     return () => {
-      console.log("adios");
+      // console.log("adios");
       window.removeEventListener("click", handleClickOutside);
     };
   }, []);
@@ -37,6 +37,7 @@ function App() {
 
       {loading && <Loader />}
 
+      {myTurn}
       <div className="grid-container">
         <Grid primary={true} />
         <Grid />

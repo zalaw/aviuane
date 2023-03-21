@@ -4,58 +4,56 @@ import CustomButton from "./CustomButton";
 import { MdKeyboardBackspace, MdRotate90DegreesCcw, MdCheck, MdClose } from "react-icons/md";
 
 const ActionsButtons = ({ primary }) => {
-  const { game, handleLeave, handleToggleReady, handleTogglePlayAgain, rotatePlane } = useGame();
+  const { game, myPlanes, myTurn, planeSelected, handleLeave, handleToggleReady, handleTogglePlayAgain, rotatePlane } =
+    useGame();
 
   return (
     <div className="actions-buttons-container">
       {primary && (
         <div className="row">
           <div className="row-item">
-            {game.opponent.connected ? (
-              <CustomButton
-                tooltip="Leave"
-                disabled={!game.opponent.connected}
-                icon={<MdKeyboardBackspace />}
-                onClick={handleLeave}
-              />
+            {!game.joinable ? (
+              <CustomButton tooltip="Leave" icon={<MdKeyboardBackspace />} onClick={handleLeave} />
             ) : null}
 
-            {game.started ? null : (
+            {!game.started && !game.finished ? (
               <>
                 <CustomButton
                   tooltip="Rotate Counterclockwise"
                   cn={"rotate-btn"}
-                  disabled={!game.planeSelected}
+                  disabled={!planeSelected}
                   icon={<MdRotate90DegreesCcw />}
-                  onClick={() => rotatePlane(game.planeSelected, -1)}
+                  onClick={() => rotatePlane(planeSelected, -1)}
                 />
                 <CustomButton
                   tooltip="Rotate Clockwise"
                   cn={"rotate-btn"}
-                  disabled={!game.planeSelected}
+                  disabled={!planeSelected}
                   icon={<MdRotate90DegreesCcw style={{ transform: "scaleX(-1)" }} />}
-                  onClick={() => rotatePlane(game.planeSelected)}
+                  onClick={() => rotatePlane(planeSelected)}
                 />
               </>
-            )}
+            ) : null}
           </div>
+
           <div className="row-item">
-            {game.opponent.connected && !game.started ? (
+            {game.players.length === 2 && !game.started && !game.finished ? (
               <CustomButton
                 tooltip={"Toggle Ready"}
-                icon={game.player.ready ? <MdCheck /> : <MdClose />}
-                cn={game.player.ready ? "ready" : "not-ready"}
-                disabled={!game.opponent.connected || game.player.planes.some(x => !x.valid)}
+                icon={game.players[myTurn].ready ? <MdCheck /> : <MdClose />}
+                cn={game.players[myTurn].ready ? "ready" : "not-ready"}
+                // disabled={game.players[myTurn].planes.some(x => !x.valid)}
+                disabled={myPlanes.some(x => !x.valid)}
                 onClick={handleToggleReady}
                 text="Ready"
               />
             ) : null}
 
-            {game.opponent.connected && game.finished ? (
+            {game.players.length === 2 && game.finished ? (
               <CustomButton
                 tooltip={"Toggle Ready"}
-                icon={game.player.playAgain ? <MdCheck /> : <MdClose />}
-                cn={game.player.playAgain ? "ready" : "not-ready"}
+                icon={game.players[myTurn].playAgain ? <MdCheck /> : <MdClose />}
+                cn={game.players[myTurn].playAgain ? "ready" : "not-ready"}
                 onClick={handleTogglePlayAgain}
                 text="Play again"
               />
@@ -66,16 +64,16 @@ const ActionsButtons = ({ primary }) => {
 
       {!primary && (
         <div className="row">
-          {game.opponent.connected && !game.started ? (
+          {game.players.length === 2 && !game.started && !game.finished ? (
             <div className="ready-container">
-              <div className={game.opponent.ready ? "ready" : "not-ready"}></div>
+              <div className={game.players[(myTurn + 1) % 2].ready ? "ready" : "not-ready"}></div>
               Opponent
             </div>
           ) : null}
 
-          {game.opponent.connected && game.finished ? (
+          {game.players.length === 2 && game.finished ? (
             <div className="ready-container">
-              <div className={game.opponent.playAgain ? "ready" : "not-ready"}></div>
+              <div className={game.players[(myTurn + 1) % 2].playAgain ? "ready" : "not-ready"}></div>
               Opponent
             </div>
           ) : null}

@@ -29,89 +29,103 @@ const rooms = new Map();
 
 io.on("connection", socket => {
   const code = generateCode();
-  const player = {
-    id: socket.id,
-    mainRoom: code,
-    planes: defaultPlanes,
-    ready: false,
-    playAgain: false,
-    turn: 0,
-  };
 
   socket.join(code);
 
-  rooms.set(code, {
-    players: [player],
-    joinable: true,
+  const roomObj = {
+    code,
+    players: [{ id: socket.id, mainRoom: code, planes: defaultPlanes, ready: false, playAgain: false }],
+    started: false,
+    finished: false,
     history: [],
-  });
+    turn: null,
+    winner: null,
+    joinable: true,
+  };
 
-  socket.emit("CONNECTED", player);
+  rooms.set(code, roomObj);
 
-  socket.on("JOIN", ({ code }) => {
+  socket.emit("CONNECTED", roomObj);
+
+  socket.on("JOIN", ({ code, planes }) => {
     code = code.toUpperCase();
 
-    if (!rooms.get(code)) return socket.emit("ROOM_NOT_FOUND");
-    if (rooms.get(code).players.length === 2) return socket.emit("CAPACITY_FULL");
-    if (rooms.get(code).joinable === false) return socket.emit("USER_IN_GAME");
+    if (!rooms.get(code)) return socket.emit("CANNOT_JOIN", "Room not found!");
+    if (rooms.get(code).players.length === 2) return socket.emit("CANNOT_JOIN", "Capacity full!");
+    if (rooms.get(code).joinable === false) return socket.emit("CANNOT_JOIN", "User in game!");
     if (io.sockets.adapter.rooms.get(code).has(socket.id)) return;
 
-    const myRoom = Array.from(socket.rooms.values())[1];
-    const myRoomData = rooms.get(myRoom);
+    const myRoomCode = Array.from(socket.rooms.values())[1];
+    const myRoom = rooms.get(myRoomCode);
+    const joinedRoom = rooms.get(code);
 
-    myRoomData.joinable = false;
-    rooms.get(code).history = [];
+    joinedRoom.joinable = false;
+    myRoom.joinable = false;
+
+    const roomToJoin = rooms.get(code);
+    roomToJoin.players.push({ ...myRoom.players[0], planes });
 
     socket.join(code);
 
-    const roomToJoin = rooms.get(code);
-    roomToJoin.players.push({ ...myRoomData.players[0], turn: 1 });
+    io.to(code).emit("STATE_CHANGED", roomToJoin);
+    io.to(socket.id).emit("SET_MY_TURN", 1);
 
-    io.to(code).emit("USER_JOINED");
+    return;
   });
 
   socket.on("USER_TOGGLE_READY", data => {
-    const joinedRooms = Array.from(socket.rooms.values());
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
-    const code = joinedRooms[2] || joinedRooms[1];
+    const code = joinedRoomCode || myRoomCode;
     const room = rooms.get(code);
     const player = room.players.find(x => x.id === socket.id);
 
     player.ready = !player.ready;
-    player.planes = data?.planes || null;
+    player.planes = data.planes;
 
-    io.to(code).emit("USER_TOGGLE_READY", { id: socket.id, ready: player.ready });
+    io.to(code).emit("STATE_CHANGED", room);
 
     if (room.players.every(x => x.ready)) {
-      io.to(code).emit("GAME_STARTED", { now: Math.round(Math.random()) });
+      room.players[0].ready = false;
+      room.players[1].ready = false;
+      room.started = true;
+      room.turn = Math.round(Math.random());
+      io.to(code).emit("STATE_CHANGED", room);
     }
   });
 
   socket.on("USER_TOGGLE_PLAY_AGAIN", () => {
-    const joinedRooms = Array.from(socket.rooms.values());
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
-    const code = joinedRooms[2] || joinedRooms[1];
+    const code = joinedRoomCode || myRoomCode;
     const room = rooms.get(code);
     const player = room.players.find(x => x.id === socket.id);
 
     player.playAgain = !player.playAgain;
 
-    io.to(code).emit("USER_TOGGLE_PLAY_AGAIN", { id: socket.id, playAgain: player.playAgain });
+    io.to(code).emit("STATE_CHANGED", room);
 
     if (room.players.every(x => x.playAgain)) {
-      room.history = [];
-      room.players[0].ready = false;
+      room.players[0].planes.forEach(p => (p.destroyed = false));
+      room.players[1].planes.forEach(p => (p.destroyed = false));
       room.players[0].playAgain = false;
-      room.players[1].ready = false;
       room.players[1].playAgain = false;
-      io.to(code).emit("PLAY_AGAIN");
+      room.finished = false;
+      room.winner = null;
+      room.history = [];
+      io.to(code).emit("STATE_CHANGED", room);
+      io.to(code).emit("PLANES", { id: null, planes: [] });
+      io.to(room.players[0].id).emit("PLANES", { id: room.players[0].id, planes: room.players[0].planes });
+      io.to(room.players[1].id).emit("PLANES", { id: room.players[1].id, planes: room.players[1].planes });
     }
   });
 
-  socket.on("ROUND_OVER", ({ playerTurn, row, col }) => {
-    const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
+  socket.on("ROUND_OVER", ({ playerTurn, cell }) => {
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
-    const code = joinedRoom || myRoom;
+    const row = Math.floor(cell / 10);
+    const col = cell % 10;
+    const code = joinedRoomCode || myRoomCode;
     const room = rooms.get(code);
 
     let hit = false;
@@ -133,110 +147,115 @@ io.on("connection", socket => {
     });
 
     io.to(room.players[(playerTurn + 1) % 2].id).emit("PLANES", {
+      id: room.players[(playerTurn + 1) % 2].id,
       planes: room.players[(playerTurn + 1) % 2].planes,
     });
 
-    room.history.push({ turn: playerTurn, row, col, status: head ? "head-hit" : hit ? "hit" : "miss" });
+    room.turn = (room.turn + 1) % 2;
+    room.history.push({ turn: playerTurn, cell, status: head ? "head-hit" : hit ? "hit" : "miss" });
 
-    io.to(code).emit("ROUND_OVER", {
-      now: (playerTurn + 1) % 2,
-      history: room.history,
-    });
+    const idx = room.players.findIndex(x => x.planes.every(x => x.destroyed));
 
-    let allDestroyed = room.players[0].planes.every(x => x.destroyed);
+    if (idx !== -1) {
+      room.started = false;
+      room.finished = true;
+      room.turn = null;
+      room.winner = (idx + 1) % 2;
 
-    if (allDestroyed) {
-      room.players[0].ready = false;
-      room.players[1].ready = false;
-      room.players[0].playAgain = false;
-      room.players[1].playAgain = false;
-      io.to(room.players[0].id).emit("GAME_OVER", {
-        winner: 1,
-        opponentPlanes: room.players[1].planes,
+      io.to(room.players[room.winner].id).emit("PLANES", {
+        id: room.players[(room.winner + 1) % 2].id,
+        planes: room.players[(room.winner + 1) % 2].planes,
       });
-      return io.to(room.players[1].id).emit("GAME_OVER", { winner: 1, opponentPlanes: room.players[0].planes });
+      io.to(room.players[(room.winner + 1) % 2].id).emit("PLANES", {
+        id: room.players[room.winner].id,
+        planes: room.players[room.winner].planes,
+      });
     }
 
-    allDestroyed = room.players[1].planes.every(x => x.destroyed);
-
-    if (allDestroyed) {
-      room.players[0].ready = false;
-      room.players[1].ready = false;
-      room.players[0].playAgain = false;
-      room.players[1].playAgain = false;
-      io.to(room.players[0].id).emit("GAME_OVER", {
-        winner: 0,
-        opponentPlanes: room.players[1].planes,
-      });
-      return io.to(room.players[1].id).emit("GAME_OVER", { winner: 0, opponentPlanes: room.players[0].planes });
-    }
+    io.to(code).emit("STATE_CHANGED", room);
   });
 
   socket.on("LEAVE", () => {
-    const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
-    const mr = rooms.get(myRoom);
-    const jr = rooms.get(joinedRoom);
+    const myRoom = rooms.get(myRoomCode);
+    const joinedRoom = rooms.get(joinedRoomCode);
 
-    mr.players[0].ready = false;
-    mr.players[0].playAgain = false;
-    mr.players[0].turn = 0;
-    mr.joinable = true;
+    if (joinedRoom) {
+      joinedRoom.players.pop();
+      joinedRoom.started = false;
+      joinedRoom.turn = null;
+      joinedRoom.winner = null;
 
-    if (jr) {
-      jr.players.pop();
-      socket.leave(joinedRoom);
-      io.to(joinedRoom).emit("USER_DISCONNECTED");
+      myRoom.joinable = true;
+
+      socket.leave(joinedRoomCode);
+
+      io.to(socket.id).emit("SET_MY_TURN", 0);
+      io.to(joinedRoomCode).emit("STATE_CHANGED", joinedRoom);
+      io.to(socket.id).emit("STATE_CHANGED", myRoom);
     } else {
+      if (myRoom.players.length === 1) {
+        myRoom.finished = false;
+        myRoom.history = [];
+        myRoom.joinable = true;
+        myRoom.players[0].ready = false;
+        myRoom.players[0].playAgain = false;
+        myRoom.started = false;
+        myRoom.turn = null;
+        myRoom.winner = null;
+
+        io.to(socket.id).emit("STATE_CHANGED", myRoom);
+        return;
+      }
+
+      myRoom.joinable = true;
+      const opponentMainRoom = rooms.get(myRoom.players[1].mainRoom);
+
       io.of("/")
-        .in(mr.players[1].id)
+        .in(myRoom.players[1].id)
         .fetchSockets()
         .then(data => {
-          const s = data.find(s => s.id.toString() === mr.players[1].id);
-          s.leave(myRoom);
-          const opponentMainRoomCode = mr.players[1].mainRoom;
-          const opponentRoom = rooms.get(opponentMainRoomCode);
+          const s = data.find(s => s.id.toString() === myRoom.players[1].id);
+          s.leave(myRoomCode);
 
-          opponentRoom.joinable = true;
-          opponentRoom.players[0].ready = false;
-          opponentRoom.players[0].playAgain = false;
-          opponentRoom.players[0].turn = 0;
+          myRoom.players.pop();
 
-          mr.players.pop();
-
-          io.to(opponentMainRoomCode).emit("USER_DISCONNECTED");
+          io.to(opponentMainRoom.players[0].id).emit("SET_MY_TURN", 0);
+          io.to(opponentMainRoom.players[0].id).emit("STATE_CHANGED", opponentMainRoom);
+          io.to(socket.id).emit("STATE_CHANGED", myRoom);
         });
     }
   });
 
   socket.on("disconnecting", () => {
-    const [_, myRoom, joinedRoom] = Array.from(socket.rooms.values());
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
+
+    const myRoom = rooms.get(myRoomCode);
+    const joinedRoom = rooms.get(joinedRoomCode);
 
     if (joinedRoom) {
-      const data = rooms.get(joinedRoom);
-      data.players = data.players.filter(x => x.id !== socket.id);
-      data.players[0].ready = false;
+      joinedRoom.players.pop();
 
-      io.to(data.players[0].id).emit("USER_DISCONNECTED");
-    } else if (rooms.get(myRoom).players.length === 2) {
-      const opponentMainRoomCode = rooms.get(myRoom).players[1].mainRoom;
-      const opponentMainRoom = rooms.get(opponentMainRoomCode);
-      opponentMainRoom.joinable = true;
-      opponentMainRoom.players[0].ready = false;
-      opponentMainRoom.players[0].playAgain = false;
+      io.to(socket.id).emit("SET_MY_TURN", 0);
+      io.to(joinedRoomCode).emit("STATE_CHANGED", joinedRoom);
+    } else if (myRoom.players.length === 2) {
+      const opponentMainRoom = rooms.get(myRoom.players[1].mainRoom);
 
       io.of("/")
-        .in(opponentMainRoom.players[0].id)
+        .in(myRoom.players[1].id)
         .fetchSockets()
         .then(data => {
-          const s = data.find(s => s.id.toString() === opponentMainRoom.players[0].id);
-          s.leave(myRoom);
-          io.to(opponentMainRoom.players[0].id).emit("USER_DISCONNECTED");
+          const s = data.find(s => s.id.toString() === myRoom.players[1].id);
+          s.leave(myRoomCode);
+
+          io.to(myRoom.players[1].id).emit("SET_MY_TURN", 0);
+          io.to(myRoom.players[1].id).emit("STATE_CHANGED", opponentMainRoom);
         });
     }
 
     socket.leave(joinedRoom || myRoom);
-    rooms.delete(myRoom);
+    rooms.delete(myRoomCode);
   });
 });
 
