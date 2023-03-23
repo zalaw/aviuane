@@ -5,10 +5,11 @@ import Navbar from "./components/Navbar";
 import { useGame } from "./contexts/GameContext";
 import { useUserInterface } from "./contexts/UserInterfaceContext";
 import Grid from "./components/Grid";
+import HelpModal from "./components/HelpModal";
 
 function App() {
-  const { darkTheme } = useUserInterface();
-  const { myTurn, loading, resetPlaneSelected } = useGame();
+  const { darkTheme, showHelpModal } = useUserInterface();
+  const { game, myTurn, loading, resetPlaneSelected } = useGame();
 
   useEffect(() => {
     const handleClickOutside = e => {
@@ -30,14 +31,23 @@ function App() {
   }, []);
 
   return (
-    <div className={`main-container ${loading ? "body-loading" : ""} ${darkTheme ? "dark" : ""}`}>
+    <div
+      className={`main-container ${loading ? "body-loading" : ""} ${darkTheme ? "dark" : ""} ${
+        game.turn !== null && myTurn === game.turn
+          ? "my-turn"
+          : game.turn !== null && myTurn !== game.turn
+          ? "opponents-turn"
+          : ""
+      }`}
+    >
+      {showHelpModal && <HelpModal />}
+
       <Navbar />
 
       <GameEvents />
 
       {loading && <Loader />}
 
-      {myTurn}
       <div className="grid-container">
         <Grid primary={true} />
         <Grid />

@@ -8,6 +8,7 @@ export function useUserInterface() {
 
 export function UserInterfaceProvider({ children }) {
   const [darkTheme, setDarkTheme] = useState();
+  const [showHelpModal, setShowHelpModal] = useState(true);
 
   function toggleDarkTheme() {
     setDarkTheme(prev => {
@@ -16,13 +17,19 @@ export function UserInterfaceProvider({ children }) {
     });
   }
 
+  function toggleShowHelpModal() {
+    setShowHelpModal(curr => !curr);
+  }
+
   useEffect(() => {
     setDarkTheme(localStorage.getItem("AVIUANE_DARK_THEME") === "true");
   }, []);
 
   const value = {
     darkTheme,
+    showHelpModal,
     toggleDarkTheme,
+    toggleShowHelpModal,
   };
 
   return <UserInterfaceContext.Provider value={value}>{children}</UserInterfaceContext.Provider>;

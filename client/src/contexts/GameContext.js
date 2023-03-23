@@ -45,11 +45,9 @@ export function GameProvider({ children }) {
     socket.on("CONNECTED", data => {
       setGame(data);
       setLoading(false);
-      // console.log(data);
     });
 
     socket.on("STATE_CHANGED", data => {
-      // console.log(data);
       setGame(data);
       setErrorMessage("");
 
