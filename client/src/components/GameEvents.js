@@ -14,8 +14,10 @@ const GameEvents = () => {
 
       {errorMessage && <p className="error">{errorMessage}</p>}
 
-      {game.turn !== null && <p>{game.turn === myTurn ? "Your turn" : "Waiting for opponent"}</p>}
-      {game.winner !== null && <p>{game.winner === myTurn ? "GGEZ" : "Better luck next time"}</p>}
+      {game.started && <p>{game.turn === myTurn ? "Your turn" : "Waiting for opponent"}</p>}
+      {game.winner !== null && (
+        <p>{game.winner === 2 ? "Tie" : game.winner === myTurn ? "GGEZ" : "Better luck next time"}</p>
+      )}
     </div>
   );
 };

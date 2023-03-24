@@ -33,11 +33,7 @@ function App() {
   return (
     <div
       className={`main-container ${loading ? "body-loading" : ""} ${darkTheme ? "dark" : ""} ${
-        game.turn !== null && myTurn === game.turn
-          ? "my-turn"
-          : game.turn !== null && myTurn !== game.turn
-          ? "opponents-turn"
-          : ""
+        game.started && myTurn === game.turn ? "my-turn" : game.started && myTurn !== game.turn ? "opponents-turn" : ""
       }`}
     >
       {showHelpModal && <HelpModal />}

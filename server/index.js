@@ -41,6 +41,7 @@ io.on("connection", socket => {
     turn: null,
     winner: null,
     joinable: true,
+    centurion: true,
   };
 
   rooms.set(code, roomObj);
@@ -89,7 +90,7 @@ io.on("connection", socket => {
       room.players[0].ready = false;
       room.players[1].ready = false;
       room.started = true;
-      room.turn = Math.round(Math.random());
+      room.turn = room.turn === null ? Math.round(Math.random()) : (room.turn + 1) % 2;
       io.to(code).emit("STATE_CHANGED", room);
     }
   });
@@ -113,6 +114,7 @@ io.on("connection", socket => {
       room.finished = false;
       room.winner = null;
       room.history = [];
+      room.centurion = true;
       io.to(code).emit("STATE_CHANGED", room);
       io.to(code).emit("PLANES", { id: null, planes: [] });
       io.to(room.players[0].id).emit("PLANES", { id: room.players[0].id, planes: room.players[0].planes });
@@ -156,10 +158,35 @@ io.on("connection", socket => {
 
     const idx = room.players.findIndex(x => x.planes.every(x => x.destroyed));
 
+    if (room.players[0].planes.every(x => x.destroyed) && room.players[1].planes.every(x => x.destroyed)) {
+      room.started = false;
+      room.finished = true;
+      room.winner = 2;
+
+      io.to(room.players[0].id).emit("PLANES", {
+        id: room.players[1].id,
+        planes: room.players[1].planes,
+      });
+      io.to(room.players[1].id).emit("PLANES", {
+        id: room.players[0].id,
+        planes: room.players[0].planes,
+      });
+
+      io.to(code).emit("STATE_CHANGED", room);
+      return;
+    }
+
+    if (idx !== -1 && room.centurion && idx !== room.history[0].turn) {
+      if (room.players[(idx + 1) % 2].planes.filter(x => x.destroyed).length === 2) {
+        room.centurion = false;
+        io.to(code).emit("STATE_CHANGED", room);
+        return;
+      }
+    }
+
     if (idx !== -1) {
       room.started = false;
       room.finished = true;
-      room.turn = null;
       room.winner = (idx + 1) % 2;
 
       io.to(room.players[room.winner].id).emit("PLANES", {

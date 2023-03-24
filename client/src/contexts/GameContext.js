@@ -162,7 +162,6 @@ export function GameProvider({ children }) {
     plane.head.row = ui.y / 32;
     plane.head.col = ui.x / 32;
 
-    console.log(plane);
     updatePieces(plane);
 
     // game.players[myTurn].planes.forEach(p => checkIfValid(p));
@@ -183,9 +182,7 @@ export function GameProvider({ children }) {
 
   const handleCellClick = cell => {
     if (!game.started || game.finished) return;
-    if (game.turn !== myTurn) return;
-
-    // if (game.history?.find(x => x.turn === game.turn && x.row === row && x.col === col)) return;
+    if (!game.started && game.turn !== myTurn) return;
 
     socket.emit("ROUND_OVER", { playerTurn: game.turn, cell });
   };

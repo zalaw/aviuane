@@ -33,6 +33,14 @@ body:has(.opponents-turn) {
   background-color: rgb(238, 219, 182);
 }
 
+body:has(.dark.my-turn) {
+  background-color: rgb(0, 46, 42);
+}
+
+body:has(.dark.opponents-turn) {
+  background-color: rgb(54, 37, 0);
+}
+
 #root {
   height: 100%;
 }
@@ -147,7 +155,7 @@ body:has(.opponents-turn) {
 .modal {
   position: absolute;
   inset: 0;
-  z-index: 1000;
+  z-index: 100000;
   background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
@@ -777,7 +785,6 @@ body:has(.dark) .modal-close:hover {
 }
 
 .dark {
-  background-color: rgb(24, 24, 27);
   color: rgb(220, 220, 220);
 }
 
