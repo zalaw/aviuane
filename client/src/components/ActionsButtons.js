@@ -37,7 +37,7 @@ const ActionsButtons = ({ primary }) => {
           </div>
 
           <div className="row-item">
-            {game.players.length === 2 && !game.started && !game.finished ? (
+            {game.players.length === 2 && !game.players.some(x => x.disconnected) && !game.started && !game.finished ? (
               <CustomButton
                 tooltip={"Toggle Ready"}
                 icon={game.players[myTurn].ready ? <MdCheck /> : <MdClose />}
@@ -49,7 +49,7 @@ const ActionsButtons = ({ primary }) => {
               />
             ) : null}
 
-            {game.players.length === 2 && game.finished ? (
+            {game.players.length === 2 && !game.players.some(x => x.disconnected) && game.finished ? (
               <CustomButton
                 tooltip={"Toggle Ready"}
                 icon={game.players[myTurn].playAgain ? <MdCheck /> : <MdClose />}
@@ -64,14 +64,14 @@ const ActionsButtons = ({ primary }) => {
 
       {!primary && (
         <div className="row">
-          {game.players.length === 2 && !game.started && !game.finished ? (
+          {game.players.length === 2 && !game.players.some(x => x.disconnected) && !game.started && !game.finished ? (
             <div className="ready-container">
               <div className={game.players[(myTurn + 1) % 2].ready ? "ready" : "not-ready"}></div>
               Opponent
             </div>
           ) : null}
 
-          {game.players.length === 2 && game.finished ? (
+          {game.players.length === 2 && !game.players.some(x => x.disconnected) && game.finished ? (
             <div className="ready-container">
               <div className={game.players[(myTurn + 1) % 2].playAgain ? "ready" : "not-ready"}></div>
               Opponent

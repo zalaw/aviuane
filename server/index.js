@@ -34,7 +34,9 @@ io.on("connection", socket => {
 
   const roomObj = {
     code,
-    players: [{ id: socket.id, mainRoom: code, planes: defaultPlanes, ready: false, playAgain: false }],
+    players: [
+      { id: socket.id, mainRoom: code, planes: defaultPlanes, ready: false, playAgain: false, disconnected: false },
+    ],
     started: false,
     finished: false,
     history: [],
@@ -46,13 +48,15 @@ io.on("connection", socket => {
 
   rooms.set(code, roomObj);
 
+  console.log([...rooms].map(x => x[0]));
+
   socket.emit("CONNECTED", roomObj);
 
   socket.on("JOIN", ({ code, planes }) => {
     code = code.toUpperCase();
 
     if (!rooms.get(code)) return socket.emit("CANNOT_JOIN", "Room not found!");
-    if (rooms.get(code).players.length === 2) return socket.emit("CANNOT_JOIN", "Capacity full!");
+    if (rooms.get(code).players.length > 1) return socket.emit("CANNOT_JOIN", "Capacity full!");
     if (rooms.get(code).joinable === false) return socket.emit("CANNOT_JOIN", "User in game!");
     if (io.sockets.adapter.rooms.get(code).has(socket.id)) return;
 
@@ -60,15 +64,16 @@ io.on("connection", socket => {
     const myRoom = rooms.get(myRoomCode);
     const joinedRoom = rooms.get(code);
 
-    joinedRoom.joinable = false;
     myRoom.joinable = false;
+    joinedRoom.joinable = false;
+    joinedRoom.players.push({ ...myRoom.players[0], planes });
 
-    const roomToJoin = rooms.get(code);
-    roomToJoin.players.push({ ...myRoom.players[0], planes });
+    // const roomToJoin = rooms.get(code);
+    // roomToJoin.players.push({ ...myRoom.players[0], planes });
 
     socket.join(code);
 
-    io.to(code).emit("STATE_CHANGED", roomToJoin);
+    io.to(code).emit("STATE_CHANGED", joinedRoom);
     io.to(socket.id).emit("SET_MY_TURN", 1);
 
     return;
@@ -91,6 +96,7 @@ io.on("connection", socket => {
       room.players[1].ready = false;
       room.started = true;
       room.turn = room.turn === null ? Math.round(Math.random()) : (room.turn + 1) % 2;
+
       io.to(code).emit("STATE_CHANGED", room);
     }
   });
@@ -209,49 +215,65 @@ io.on("connection", socket => {
     const joinedRoom = rooms.get(joinedRoomCode);
 
     if (joinedRoom) {
-      joinedRoom.players.pop();
-      joinedRoom.started = false;
-      joinedRoom.turn = null;
-      joinedRoom.winner = null;
-
       myRoom.joinable = true;
 
       socket.leave(joinedRoomCode);
+      socket.emit("STATE_CHANGED", myRoom);
 
-      io.to(socket.id).emit("SET_MY_TURN", 0);
-      io.to(joinedRoomCode).emit("STATE_CHANGED", joinedRoom);
-      io.to(socket.id).emit("STATE_CHANGED", myRoom);
-    } else {
-      if (myRoom.players.length === 1) {
-        myRoom.finished = false;
-        myRoom.history = [];
-        myRoom.joinable = true;
-        myRoom.players[0].ready = false;
-        myRoom.players[0].playAgain = false;
-        myRoom.started = false;
-        myRoom.turn = null;
-        myRoom.winner = null;
-
-        io.to(socket.id).emit("STATE_CHANGED", myRoom);
-        return;
+      if (joinedRoom.players.length === 2) {
+        joinedRoom.players[1].disconnected = true;
+        io.to(joinedRoom.players[0].id).emit("STATE_CHANGED", joinedRoom);
       }
 
+      joinedRoom.players.pop();
+    } else {
+      if (myRoom.players.length === 2) {
+        const s = io.sockets.sockets.get(myRoom.players[1].id);
+
+        s.leave(myRoomCode);
+
+        myRoom.players[0].disconnected = true;
+        io.to(myRoom.players[1].id).emit("STATE_CHANGED", myRoom);
+
+        myRoom.players.pop();
+      }
+
+      myRoom.players[0].disconnected = false;
+      myRoom.started = false;
+      myRoom.finished = false;
+      myRoom.history = [];
+      myRoom.turn = null;
+      myRoom.winner = null;
       myRoom.joinable = true;
-      const opponentMainRoom = rooms.get(myRoom.players[1].mainRoom);
+      myRoom.centurion = true;
 
-      io.of("/")
-        .in(myRoom.players[1].id)
-        .fetchSockets()
-        .then(data => {
-          const s = data.find(s => s.id.toString() === myRoom.players[1].id);
-          s.leave(myRoomCode);
+      socket.emit("STATE_CHANGED", myRoom);
+      // return;
 
-          myRoom.players.pop();
+      // if (!myRoom.players[1].disconnected) {
+      //   myRoom.players[0].disconnected = true;
+      //   io.to(myRoom.players[1].id).emit("STATE_CHANGED", myRoom);
+      // }
 
-          io.to(opponentMainRoom.players[0].id).emit("SET_MY_TURN", 0);
-          io.to(opponentMainRoom.players[0].id).emit("STATE_CHANGED", opponentMainRoom);
-          io.to(socket.id).emit("STATE_CHANGED", myRoom);
-        });
+      // myRoom.players.pop();
+      // myRoom.players[0].disconnected = false;
+      // myRoom.started = false;
+      // myRoom.finished = false;
+      // myRoom.history = [];
+      // myRoom.turn = null;
+      // myRoom.winner = null;
+      // myRoom.joinable = true;
+      // myRoom.centurion = true;
+
+      // io.to(socket.id).emit("STATE_CHANGED", myRoom);
+    }
+
+    if (myRoom?.players.length === 0) {
+      rooms.delete(myRoomCode);
+    }
+
+    if (joinedRoom?.players.length === 0) {
+      rooms.delete(joinedRoomCode);
     }
   });
 
@@ -262,26 +284,30 @@ io.on("connection", socket => {
     const joinedRoom = rooms.get(joinedRoomCode);
 
     if (joinedRoom) {
+      if (joinedRoom.players.length === 2) {
+        joinedRoom.players[1].disconnected = true;
+        io.to(joinedRoom.players[0].id).emit("STATE_CHANGED", joinedRoom);
+      }
+
       joinedRoom.players.pop();
+    } else {
+      if (myRoom.players.length === 2) {
+        myRoom.players[0].disconnected = true;
+        io.to(myRoom.players[1].id).emit("STATE_CHANGED", myRoom);
+      }
 
-      io.to(socket.id).emit("SET_MY_TURN", 0);
-      io.to(joinedRoomCode).emit("STATE_CHANGED", joinedRoom);
-    } else if (myRoom.players.length === 2) {
-      const opponentMainRoom = rooms.get(myRoom.players[1].mainRoom);
-
-      io.of("/")
-        .in(myRoom.players[1].id)
-        .fetchSockets()
-        .then(data => {
-          const s = data.find(s => s.id.toString() === myRoom.players[1].id);
-          s.leave(myRoomCode);
-
-          io.to(myRoom.players[1].id).emit("SET_MY_TURN", 0);
-          io.to(myRoom.players[1].id).emit("STATE_CHANGED", opponentMainRoom);
-        });
+      myRoom.players.pop();
     }
 
-    socket.leave(joinedRoom || myRoom);
+    if (myRoom?.players.length === 0) {
+      rooms.delete(myRoomCode);
+    }
+
+    if (joinedRoom?.players.length === 0) {
+      rooms.delete(joinedRoomCode);
+    }
+
+    socket.leave(joinedRoomCode || myRoomCode);
     rooms.delete(myRoomCode);
   });
 });

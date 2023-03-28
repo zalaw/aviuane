@@ -12,7 +12,7 @@ export default function Plane({ plane }) {
 
   return (
     <Draggable
-      disabled={game.players[myTurn].ready}
+      disabled={game.started || game.finished || game.players[myTurn].ready}
       bounds="parent"
       grid={[32, 32]}
       defaultPosition={{ x: plane.head.col * 32, y: plane.head.row * 32 }}
@@ -20,7 +20,7 @@ export default function Plane({ plane }) {
     >
       <div
         className={`plane ${planeSelected?.id === plane.id ? "plane-selected" : ""} ${
-          !game.players[myTurn].ready ? "plane-movable" : ""
+          !game.started && !game.finished && !game.players[myTurn].ready ? "plane-movable" : ""
         } ${plane.pos} ${!plane.valid ? "plane-not-valid" : ""} ${plane.destroyed ? "plane-destroyed" : ""}`}
         onClick={() => selectPlane(plane)}
         onTouchStart={() => selectPlane(plane)}

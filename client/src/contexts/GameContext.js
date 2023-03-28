@@ -51,8 +51,9 @@ export function GameProvider({ children }) {
       setGame(data);
       setErrorMessage("");
 
-      if (!data.joinable && data.players.length === 1) {
+      if (data.players.some(x => x.disconnected)) {
         setErrorMessage("Opponent disconnected!");
+        // setMyTurn(0);
       }
 
       if (data.players.every(x => x.playAgain)) {
@@ -78,7 +79,11 @@ export function GameProvider({ children }) {
   }, [socket]);
 
   const rotatePlane = (plane, dir = 1) => {
-    if (game.players[myTurn].ready) return;
+    if (game.started || game.finished || game.players[myTurn].ready) return;
+
+    console.log(game);
+
+    console.log("rotating");
 
     setPlaneSelected(plane);
 
@@ -181,8 +186,10 @@ export function GameProvider({ children }) {
   }
 
   const handleCellClick = cell => {
-    if (!game.started || game.finished) return;
-    if (!game.started && game.turn !== myTurn) return;
+    if (!game.started || game.finished || game.players.some(x => x.disconnected)) return;
+    if (game.started && game.turn !== myTurn) return;
+
+    console.log("merge mai departe");
 
     socket.emit("ROUND_OVER", { playerTurn: game.turn, cell });
   };
@@ -192,7 +199,7 @@ export function GameProvider({ children }) {
   };
 
   const selectPlane = plane => {
-    if (game.players[myTurn].ready || game.started) return;
+    if (game.started || game.finished || game.players[myTurn].ready) return;
     setPlaneSelected(plane);
   };
 
@@ -201,6 +208,7 @@ export function GameProvider({ children }) {
   };
 
   const handleLeave = () => {
+    setMyTurn(0);
     socket.emit("LEAVE");
     setErrorMessage("");
     setMyPlanes(curr => curr.map(p => ({ ...p, destroyed: false })));

@@ -28,12 +28,19 @@ function App() {
       // console.log("adios");
       window.removeEventListener("click", handleClickOutside);
     };
+    // eslint-disable-next-line
   }, []);
 
   return (
     <div
       className={`main-container ${loading ? "body-loading" : ""} ${darkTheme ? "dark" : ""} ${
-        game.started && myTurn === game.turn ? "my-turn" : game.started && myTurn !== game.turn ? "opponents-turn" : ""
+        game.players.some(x => x.disconnected)
+          ? ""
+          : game.started && myTurn === game.turn
+          ? "my-turn"
+          : game.started && myTurn !== game.turn
+          ? "opponents-turn"
+          : ""
       }`}
     >
       {showHelpModal && <HelpModal />}

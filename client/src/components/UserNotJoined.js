@@ -11,13 +11,15 @@ const UserNotJoined = () => {
 
   return (
     <div className="user-not-joined-container">
-      <CustomInput onChange={e => setInputValue(e.target.value)} maxLength={4} placeholder={"Your friend's code"} />
-      <CustomButton
-        onClick={() => handleJoin(inputValue)}
-        disabled={inputValue.length !== 4 || inputValue.toUpperCase() === game.code}
-        text="Join"
-        icon={<MdOutlineChevronRight />}
-      />
+      <div className="user-not-joined-input-row">
+        <CustomInput onChange={e => setInputValue(e.target.value)} maxLength={4} placeholder={"Your friend's code"} />
+        <CustomButton
+          onClick={() => handleJoin(inputValue)}
+          disabled={inputValue.length !== 4 || inputValue.toUpperCase() === game.code}
+          text="Join"
+          icon={<MdOutlineChevronRight />}
+        />
+      </div>
     </div>
   );
 };
