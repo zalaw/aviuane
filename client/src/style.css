@@ -153,7 +153,7 @@ body:has(.dark.opponents-turn) {
 }
 
 .modal {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 100000;
   background-color: rgba(0, 0, 0, 0.75);
@@ -222,6 +222,8 @@ body:has(.dark) .modal-close:hover {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 30rem;
+  overflow-y: auto;
 }
 
 .navbar-right {

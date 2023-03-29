@@ -9,6 +9,10 @@ const HelpModal = () => {
     <Modal title="How to play" handleCloseModal={toggleShowHelpModal}>
       <p>Welcome to Aviuane!</p>
       <p>Your goal is to destroy all of your opponent's airplanes before they destroy yours. The game is turn-based.</p>
+      <p>
+        You can move your planes by dragging them and you can rotate them by right-clicking them or using the buttons
+        below your grid after the desired plane is selected.
+      </p>
       <p>Here's what symbols mean:</p>
       <div className="list">
         <div className="list-item">
