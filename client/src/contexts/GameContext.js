@@ -81,10 +81,6 @@ export function GameProvider({ children }) {
   const rotatePlane = (plane, dir = 1) => {
     if (game.started || game.finished || game.players[myTurn].ready) return;
 
-    console.log(game);
-
-    console.log("rotating");
-
     setPlaneSelected(plane);
 
     plane.posIndex = dir === 1 ? (plane.posIndex + 1) % 4 : (plane.posIndex + 3) % 4;
@@ -188,8 +184,6 @@ export function GameProvider({ children }) {
   const handleCellClick = cell => {
     if (!game.started || game.finished || game.players.some(x => x.disconnected)) return;
     if (game.started && game.turn !== myTurn) return;
-
-    console.log("merge mai departe");
 
     socket.emit("ROUND_OVER", { playerTurn: game.turn, cell });
   };

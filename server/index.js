@@ -12,6 +12,14 @@ app.use(cors());
 
 const server = createServer(app);
 
+// function wait(time = 1000) {
+//   return new Promise(res => {
+//     setTimeout(() => {
+//       res();
+//     }, time);
+//   });
+// }
+
 // trigger
 
 const io = new Server(server, {
@@ -49,8 +57,6 @@ io.on("connection", socket => {
   };
 
   rooms.set(code, roomObj);
-
-  console.log([...rooms].map(x => x[0]));
 
   socket.emit("CONNECTED", roomObj);
 
@@ -130,13 +136,15 @@ io.on("connection", socket => {
     }
   });
 
-  socket.on("ROUND_OVER", ({ playerTurn, cell }) => {
+  socket.on("ROUND_OVER", async ({ playerTurn, cell }) => {
     const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
     const row = Math.floor(cell / 10);
     const col = cell % 10;
     const code = joinedRoomCode || myRoomCode;
     const room = rooms.get(code);
+
+    if (room.history.length > 0 && playerTurn === room.history[room.history.length - 1].turn) return;
 
     let hit = false;
     let head = false;
@@ -241,6 +249,8 @@ io.on("connection", socket => {
       }
 
       myRoom.players[0].disconnected = false;
+      myRoom.players[0].ready = false;
+      myRoom.players[0].playAgain = false;
       myRoom.started = false;
       myRoom.finished = false;
       myRoom.history = [];

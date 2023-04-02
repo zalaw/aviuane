@@ -25,7 +25,6 @@ function App() {
     window.addEventListener("click", handleClickOutside);
 
     return () => {
-      // console.log("adios");
       window.removeEventListener("click", handleClickOutside);
     };
     // eslint-disable-next-line
