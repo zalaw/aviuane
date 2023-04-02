@@ -13,6 +13,7 @@ const HelpModal = () => {
         You can move your planes by dragging them and you can rotate them by right-clicking them or using the buttons
         below your grid after the desired plane is selected.
       </p>
+      <p>The planes cannot overlap and cannot go out of grid.</p>
       <p>Here's what symbols mean:</p>
       <div className="list">
         <div className="list-item">

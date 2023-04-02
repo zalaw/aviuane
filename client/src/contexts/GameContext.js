@@ -184,6 +184,7 @@ export function GameProvider({ children }) {
   const handleCellClick = cell => {
     if (!game.started || game.finished || game.players.some(x => x.disconnected)) return;
     if (game.started && game.turn !== myTurn) return;
+    if (game.history.find(x => x.turn === myTurn && x.cell === cell)) return;
 
     socket.emit("ROUND_OVER", { playerTurn: game.turn, cell });
   };

@@ -152,6 +152,40 @@ body:has(.dark.opponents-turn) {
   top: -100%;
 }
 
+/* width */
+::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  border-radius: 0.5rem;
+  background-color: rgb(240, 240, 240);
+}
+
+body:has(.dark) ::-webkit-scrollbar-track {
+  background-color: rgb(34, 34, 37);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  border-radius: 0.5rem;
+  background: rgb(210, 210, 210);
+}
+
+body:has(.dark) ::-webkit-scrollbar-thumb {
+  background: rgb(64, 64, 67);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(190, 190, 190);
+}
+
+body:has(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgb(84, 84, 87);
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -172,6 +206,7 @@ body:has(.dark.opponents-turn) {
   flex-direction: column;
   gap: 2rem;
   max-width: 30rem;
+  min-height: 20rem;
 }
 
 body:has(.dark) .modal-body {
