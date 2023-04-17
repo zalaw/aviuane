@@ -45,7 +45,14 @@ io.on("connection", socket => {
   const roomObj = {
     code,
     players: [
-      { id: socket.id, mainRoom: code, planes: defaultPlanes, ready: false, playAgain: false, disconnected: false },
+      {
+        id: socket.id,
+        mainRoom: code,
+        planes: defaultPlanes.slice(0, 3),
+        ready: false,
+        playAgain: false,
+        disconnected: false,
+      },
     ],
     started: false,
     finished: false,
@@ -54,6 +61,8 @@ io.on("connection", socket => {
     winner: null,
     joinable: true,
     centurion: true,
+    gridSize: 10,
+    numOfPlanes: 3,
   };
 
   rooms.set(code, roomObj);
@@ -83,6 +92,7 @@ io.on("connection", socket => {
 
     io.to(code).emit("STATE_CHANGED", joinedRoom);
     io.to(socket.id).emit("SET_MY_TURN", 1);
+    io.to(socket.id).emit("PLANES", { id: socket.id, planes: defaultPlanes.slice(0, joinedRoom.numOfPlanes) });
 
     return;
   });
@@ -107,6 +117,23 @@ io.on("connection", socket => {
 
       io.to(code).emit("STATE_CHANGED", room);
     }
+  });
+
+  socket.on("SETTINGS_CHANGED", ({ gridSize = 10, numOfPlanes = 3 }) => {
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
+
+    const code = joinedRoomCode || myRoomCode;
+    const room = rooms.get(code);
+
+    if (room.numOfPlanes !== numOfPlanes) {
+      room.players[0].planes = defaultPlanes.slice(0, numOfPlanes);
+    }
+
+    room.gridSize = gridSize;
+    room.numOfPlanes = numOfPlanes;
+
+    io.to(code).emit("STATE_CHANGED", room);
+    io.to(room.players[0].id).emit("PLANES", { id: room.players[0].id, planes: room.players[0].planes });
   });
 
   socket.on("USER_TOGGLE_PLAY_AGAIN", () => {
@@ -139,10 +166,11 @@ io.on("connection", socket => {
   socket.on("ROUND_OVER", async ({ playerTurn, cell }) => {
     const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 
-    const row = Math.floor(cell / 10);
-    const col = cell % 10;
     const code = joinedRoomCode || myRoomCode;
     const room = rooms.get(code);
+
+    const row = Math.floor(cell / room.gridSize);
+    const col = cell % room.gridSize;
 
     if (room.history.length > 0 && playerTurn === room.history[room.history.length - 1].turn) return;
 
@@ -229,6 +257,7 @@ io.on("connection", socket => {
 
       socket.leave(joinedRoomCode);
       socket.emit("STATE_CHANGED", myRoom);
+      socket.emit("PLANES", { id: socket.id, planes: myRoom.players[0].planes });
 
       if (joinedRoom.players.length === 2) {
         joinedRoom.players[1].disconnected = true;
@@ -260,24 +289,6 @@ io.on("connection", socket => {
       myRoom.centurion = true;
 
       socket.emit("STATE_CHANGED", myRoom);
-      // return;
-
-      // if (!myRoom.players[1].disconnected) {
-      //   myRoom.players[0].disconnected = true;
-      //   io.to(myRoom.players[1].id).emit("STATE_CHANGED", myRoom);
-      // }
-
-      // myRoom.players.pop();
-      // myRoom.players[0].disconnected = false;
-      // myRoom.started = false;
-      // myRoom.finished = false;
-      // myRoom.history = [];
-      // myRoom.turn = null;
-      // myRoom.winner = null;
-      // myRoom.joinable = true;
-      // myRoom.centurion = true;
-
-      // io.to(socket.id).emit("STATE_CHANGED", myRoom);
     }
 
     if (myRoom?.players.length === 0) {

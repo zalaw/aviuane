@@ -6,9 +6,10 @@ import { useGame } from "./contexts/GameContext";
 import { useUserInterface } from "./contexts/UserInterfaceContext";
 import Grid from "./components/Grid";
 import HelpModal from "./components/HelpModal";
+import SettingsModal from "./components/SettingsModal";
 
 function App() {
-  const { darkTheme, showHelpModal } = useUserInterface();
+  const { darkTheme, showHelpModal, showSettingsModal } = useUserInterface();
   const { game, myTurn, loading, resetPlaneSelected } = useGame();
 
   useEffect(() => {
@@ -43,6 +44,7 @@ function App() {
       }`}
     >
       {showHelpModal && <HelpModal />}
+      {showSettingsModal && <SettingsModal />}
 
       <Navbar />
 
@@ -50,7 +52,7 @@ function App() {
 
       {loading && <Loader />}
 
-      <div className="grid-container">
+      <div className="grid-container" onContextMenu={e => e.preventDefault()}>
         <Grid primary={true} />
         <Grid />
       </div>

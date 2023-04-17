@@ -1,9 +1,11 @@
 import React from "react";
 import { useGame } from "../contexts/GameContext";
 import CustomButton from "./CustomButton";
-import { MdKeyboardBackspace, MdRotate90DegreesCcw, MdCheck, MdClose } from "react-icons/md";
+import { MdKeyboardBackspace, MdSettings, MdRotate90DegreesCcw, MdCheck, MdClose } from "react-icons/md";
+import { useUserInterface } from "../contexts/UserInterfaceContext";
 
 const ActionsButtons = ({ primary }) => {
+  const { toggleShowSettingsModal } = useUserInterface();
   const { game, myPlanes, myTurn, planeSelected, handleLeave, handleToggleReady, handleTogglePlayAgain, rotatePlane } =
     useGame();
 
@@ -14,6 +16,10 @@ const ActionsButtons = ({ primary }) => {
           <div className="row-item">
             {!game.joinable ? (
               <CustomButton tooltip="Leave" icon={<MdKeyboardBackspace />} onClick={handleLeave} />
+            ) : null}
+
+            {!game.started && !game.finished && myTurn === 0 && game.players.length === 1 ? (
+              <CustomButton tooltip="Settings" icon={<MdSettings />} onClick={toggleShowSettingsModal} />
             ) : null}
 
             {!game.started && !game.finished ? (

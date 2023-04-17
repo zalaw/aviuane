@@ -4,8 +4,6 @@ import UserNotJoined from "./UserNotJoined";
 import { useGame } from "../contexts/GameContext";
 import Plane from "./Plane";
 
-const ROWS = 10;
-
 export default function Grid({ primary = false }) {
   const { game, myPlanes, myTurn, handleCellClick, opponentPlanes } = useGame();
 
@@ -17,11 +15,13 @@ export default function Grid({ primary = false }) {
   const generateCells = () => {
     const result = [];
 
-    for (let i = 0; i < ROWS * ROWS; i++) {
+    for (let i = 0; i < game.gridSize * game.gridSize; i++) {
       const hoverableClass = !primary ? "cell-hoverable" : "";
-      const markerCol = i < ROWS ? <div className="marker marker-col">{i + 1}</div> : null;
+      const markerCol = i < game.gridSize ? <div className="marker marker-col">{i + 1}</div> : null;
       const markerRow =
-        i % ROWS === 0 ? <div className="marker marker-row">{String.fromCharCode(65 + Math.floor(i / 10))}</div> : null;
+        i % game.gridSize === 0 ? (
+          <div className="marker marker-row">{String.fromCharCode(65 + Math.floor(i / game.gridSize))}</div>
+        ) : null;
       const mt = game.history.find(x => x.turn === myTurn && x.cell === i);
       const ot = game.history.find(x => x.turn === (myTurn + 1) % 2 && x.cell === i);
 
@@ -40,9 +40,16 @@ export default function Grid({ primary = false }) {
     return result;
   };
 
+  const gridStyle = {
+    width: `${game.gridSize * 2}rem`,
+    height: `${game.gridSize * 2}rem`,
+    minWidth: `${game.gridSize * 2}rem`,
+    minHeight: `${game.gridSize * 2}rem`,
+  };
+
   return (
     <div className="grid-outer">
-      <div className="grid">
+      <div className="grid" style={gridStyle}>
         {generateCells()}
         {primary && myPlanes.map(p => <Plane key={p.id} plane={p} />)}
         {!primary && opponentPlanes.map(p => <Plane key={`opponent-${p.id}`} plane={p} />)}

@@ -5,6 +5,12 @@ import Draggable from "react-draggable";
 export default function Plane({ plane }) {
   const { game, myTurn, planeSelected, handleOnStop, rotatePlane, selectPlane } = useGame();
 
+  const disabled = game.started || game.finished || game.players[myTurn].ready;
+  const planeSelectedClass = planeSelected?.id === plane.id ? "plane-selected" : "";
+  const planeMovableClass = !game.started && !game.finished && !game.players[myTurn].ready ? "plane-movable" : "";
+  const planeNotValidClass = !plane.valid ? "plane-not-valid" : "";
+  const planeDestroyedClass = plane.destroyed ? "plane-destroyed" : "";
+
   const handleRotatePlane = (e, plane) => {
     e.preventDefault();
     rotatePlane(plane);
@@ -12,16 +18,14 @@ export default function Plane({ plane }) {
 
   return (
     <Draggable
-      disabled={game.started || game.finished || game.players[myTurn].ready}
+      disabled={disabled}
       bounds="parent"
       grid={[32, 32]}
       defaultPosition={{ x: plane.head.col * 32, y: plane.head.row * 32 }}
       onStop={(e, ui) => handleOnStop(plane, ui)}
     >
       <div
-        className={`plane ${planeSelected?.id === plane.id ? "plane-selected" : ""} ${
-          !game.started && !game.finished && !game.players[myTurn].ready ? "plane-movable" : ""
-        } ${plane.pos} ${!plane.valid ? "plane-not-valid" : ""} ${plane.destroyed ? "plane-destroyed" : ""}`}
+        className={`plane ${plane.pos} ${planeSelectedClass} ${planeMovableClass} ${planeNotValidClass} ${planeDestroyedClass}`}
         onClick={() => selectPlane(plane)}
         onTouchStart={() => selectPlane(plane)}
         onContextMenu={e => handleRotatePlane(e, plane)}

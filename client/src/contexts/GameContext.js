@@ -15,7 +15,7 @@ export function GameProvider({ children }) {
   const [game, setGame] = useState(null);
   const [myTurn, setMyTurn] = useState(0);
   const [planeSelected, setPlaneSelected] = useState(null);
-  const [myPlanes, setMyPlanes] = useState(defaultPlanes);
+  const [myPlanes, setMyPlanes] = useState([]);
   const [opponentPlanes, setOpponentPlanes] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -43,8 +43,9 @@ export function GameProvider({ children }) {
     if (!socket) return;
 
     socket.on("CONNECTED", data => {
-      setGame(data);
       setLoading(false);
+      setGame(data);
+      setMyPlanes(defaultPlanes.slice(0, data.numOfPlanes));
     });
 
     socket.on("STATE_CHANGED", data => {
@@ -53,7 +54,6 @@ export function GameProvider({ children }) {
 
       if (data.players.some(x => x.disconnected)) {
         setErrorMessage("Opponent disconnected!");
-        // setMyTurn(0);
       }
 
       if (data.players.every(x => x.playAgain)) {
@@ -71,7 +71,10 @@ export function GameProvider({ children }) {
 
     socket.on("PLANES", ({ id, planes }) => {
       if (id === socket.id) {
-        setMyPlanes(planes);
+        setMyPlanes([]);
+        setTimeout(() => {
+          setMyPlanes(planes);
+        }, 1);
       } else {
         setOpponentPlanes(planes);
       }
@@ -96,7 +99,8 @@ export function GameProvider({ children }) {
   const checkIfValid = plane => {
     plane.valid = true;
 
-    if (plane.pieces.some(x => x.row < 0 || x.row > 9 || x.col < 0 || x.col > 9)) plane.valid = false;
+    if (plane.pieces.some(x => x.row < 0 || x.row >= game.gridSize || x.col < 0 || x.col >= game.gridSize))
+      plane.valid = false;
 
     // const planes = game.players[myTurn].planes.filter(x => x.id !== plane.id);
     const planes = myPlanes.filter(x => x.id !== plane.id);
@@ -181,6 +185,10 @@ export function GameProvider({ children }) {
     socket.emit("USER_TOGGLE_READY", { planes: myPlanes });
   }
 
+  function handleSettingsChange({ gridSize, numOfPlanes }) {
+    socket.emit("SETTINGS_CHANGED", { gridSize, numOfPlanes });
+  }
+
   const handleCellClick = cell => {
     if (!game.started || game.finished || game.players.some(x => x.disconnected)) return;
     if (game.started && game.turn !== myTurn) return;
@@ -227,6 +235,7 @@ export function GameProvider({ children }) {
     selectPlane,
     resetPlaneSelected,
     handleLeave,
+    handleSettingsChange,
   };
 
   return <GameContext.Provider value={value}>{loading ? <Loader /> : children}</GameContext.Provider>;
