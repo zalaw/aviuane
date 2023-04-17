@@ -221,7 +221,7 @@ io.on("connection", socket => {
     }
 
     if (idx !== -1 && room.centurion && idx !== room.history[0].turn) {
-      if (room.players[(idx + 1) % 2].planes.filter(x => x.destroyed).length === 2) {
+      if (room.players[(idx + 1) % 2].planes.filter(x => x.destroyed).length === room.numOfPlanes - 1) {
         room.centurion = false;
         io.to(code).emit("STATE_CHANGED", room);
         return;
@@ -277,6 +277,7 @@ io.on("connection", socket => {
         myRoom.players.pop();
       }
 
+      myRoom.players[0].planes = defaultPlanes.slice(0, myRoom.numOfPlanes);
       myRoom.players[0].disconnected = false;
       myRoom.players[0].ready = false;
       myRoom.players[0].playAgain = false;
@@ -289,6 +290,7 @@ io.on("connection", socket => {
       myRoom.centurion = true;
 
       socket.emit("STATE_CHANGED", myRoom);
+      socket.emit("PLANES", { id: socket.id, planes: myRoom.players[0].planes });
     }
 
     if (myRoom?.players.length === 0) {
