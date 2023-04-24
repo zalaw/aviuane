@@ -280,6 +280,10 @@ body:has(.dark) .modal-body {
   background-color: white;
 }
 
+.babajeeeee {
+  background-color: pink;
+}
+
 body:has(.dark) .modal-close {
   background-color: rgb(24, 24, 27);
 }
