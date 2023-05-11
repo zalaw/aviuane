@@ -22,8 +22,10 @@ export function UserInterfaceProvider({ children }) {
     setShowHelpModal(curr => !curr);
   }
 
-  function toggleShowSettingsModal() {
-    setShowSettingsModal(curr => !curr);
+  function toggleShowSettingsModal(val = null) {
+    console.log("yoo");
+    console.log(val);
+    setShowSettingsModal(curr => (val !== null ? val : !curr));
   }
 
   useEffect(() => {

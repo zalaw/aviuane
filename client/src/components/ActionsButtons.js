@@ -19,7 +19,7 @@ const ActionsButtons = ({ primary }) => {
             ) : null}
 
             {!game.started && !game.finished && myTurn === 0 && game.players.length === 1 ? (
-              <CustomButton tooltip="Settings" icon={<MdSettings />} onClick={toggleShowSettingsModal} />
+              <CustomButton tooltip="Settings" icon={<MdSettings />} onClick={() => toggleShowSettingsModal()} />
             ) : null}
 
             {!game.started && !game.finished ? (

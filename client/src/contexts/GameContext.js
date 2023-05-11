@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import Loader from "../components/Loader";
 import { rotations, defaultPlanes } from "../data/data";
+import { useUserInterface } from "./UserInterfaceContext";
 
 const GameContext = createContext();
 
@@ -18,6 +19,8 @@ export function GameProvider({ children }) {
   const [myPlanes, setMyPlanes] = useState([]);
   const [opponentPlanes, setOpponentPlanes] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const { toggleShowSettingsModal } = useUserInterface();
 
   useEffect(() => {
     const s = io(
@@ -59,6 +62,8 @@ export function GameProvider({ children }) {
       if (data.players.every(x => x.playAgain)) {
         setOpponentPlanes([]);
       }
+
+      toggleShowSettingsModal(false);
     });
 
     socket.on("SET_MY_TURN", turn => {
