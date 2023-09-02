@@ -7,7 +7,7 @@ const Modal = ({ title = "", handleCloseModal, children }) => {
       <div className="modal-body">
         <div className="modal-header">
           {title}
-          <div onClick={handleCloseModal} className="modal-close">
+          <div onClick={() => handleCloseModal()} className="modal-close">
             <MdClose />
           </div>
         </div>

@@ -19,14 +19,14 @@ export default function Plane({ plane }) {
   return (
     <Draggable
       disabled={disabled}
-      bounds="parent"
+      bounds={{ left: 0, top: 0, right: game.gridSize * 32 - 32, bottom: game.gridSize * 32 - 32 }}
       grid={[32, 32]}
       defaultPosition={{ x: plane.head.col * 32, y: plane.head.row * 32 }}
       onStop={(e, ui) => handleOnStop(plane, ui)}
     >
       <div
         className={`plane ${plane.pos} ${planeSelectedClass} ${planeMovableClass} ${planeNotValidClass} ${planeDestroyedClass}`}
-        onClick={() => selectPlane(plane)}
+        onMouseDownCapture={() => selectPlane(plane)}
         onTouchStart={() => selectPlane(plane)}
         onContextMenu={e => handleRotatePlane(e, plane)}
       >

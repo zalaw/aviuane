@@ -23,8 +23,6 @@ export function UserInterfaceProvider({ children }) {
   }
 
   function toggleShowSettingsModal(val = null) {
-    console.log("yoo");
-    console.log(val);
     setShowSettingsModal(curr => (val !== null ? val : !curr));
   }
 
