@@ -246,6 +246,14 @@ io.on("connection", socket => {
     io.to(code).emit("STATE_CHANGED", room);
   });
 
+  socket.on("EMOTE", index => {
+    const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
+
+    const code = joinedRoomCode || myRoomCode;
+
+    io.to(code).emit("EMOTE", { index, left: Math.floor(5 + Math.random() * 90) });
+  });
+
   socket.on("LEAVE", () => {
     const [_, myRoomCode, joinedRoomCode] = Array.from(socket.rooms.values());
 

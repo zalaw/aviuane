@@ -4,6 +4,12 @@ import Loader from "../components/Loader";
 import { rotations, defaultPlanes } from "../data/data";
 import { useUserInterface } from "./UserInterfaceContext";
 
+import AngryEmoji from "../assets/angry-emoji.png";
+import ClownEmoji from "../assets/clown-emoji.png";
+import FlushedEmoji from "../assets/flushed-emoji.png";
+import LaughingEmoji from "../assets/laughing-emoji.png";
+import ThinkingEmoji from "../assets/thinking-emoji.png";
+
 const GameContext = createContext();
 
 export function useGame() {
@@ -11,6 +17,8 @@ export function useGame() {
 }
 
 export function GameProvider({ children }) {
+  const emotes = [AngryEmoji, ClownEmoji, FlushedEmoji, LaughingEmoji, ThinkingEmoji];
+
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState(null);
   const [game, setGame] = useState(null);
@@ -19,6 +27,7 @@ export function GameProvider({ children }) {
   const [myPlanes, setMyPlanes] = useState([]);
   const [opponentPlanes, setOpponentPlanes] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [emotesToDisplay, setEmotesToDisplay] = useState([]);
 
   const { toggleShowSettingsModal } = useUserInterface();
 
@@ -83,6 +92,16 @@ export function GameProvider({ children }) {
       } else {
         setOpponentPlanes(planes);
       }
+    });
+
+    socket.on("EMOTE", ({ index, left }) => {
+      const key = new Date().getTime();
+
+      setEmotesToDisplay(curr => [...curr, { index, key, left }]);
+
+      setTimeout(() => {
+        setEmotesToDisplay(curr => curr.filter(x => x.key !== key));
+      }, 3000);
     });
   }, [socket]);
 
@@ -223,6 +242,10 @@ export function GameProvider({ children }) {
     setOpponentPlanes([]);
   };
 
+  const handleSendEmote = index => {
+    socket.emit("EMOTE", index);
+  };
+
   const value = {
     game,
     myPlanes,
@@ -231,6 +254,8 @@ export function GameProvider({ children }) {
     opponentPlanes,
     myTurn,
     errorMessage,
+    emotes,
+    emotesToDisplay,
     rotatePlane,
     handleOnStop,
     handleJoin,
@@ -241,6 +266,7 @@ export function GameProvider({ children }) {
     resetPlaneSelected,
     handleLeave,
     handleSettingsChange,
+    handleSendEmote,
   };
 
   return <GameContext.Provider value={value}>{loading ? <Loader /> : children}</GameContext.Provider>;

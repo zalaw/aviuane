@@ -7,6 +7,7 @@ import { useUserInterface } from "./contexts/UserInterfaceContext";
 import Grid from "./components/Grid";
 import HelpModal from "./components/HelpModal";
 import SettingsModal from "./components/SettingsModal";
+import EmotesMenu from "./components/EmotesMenu";
 
 function App() {
   const { darkTheme, showHelpModal, showSettingsModal } = useUserInterface();
@@ -47,17 +48,15 @@ function App() {
       {showSettingsModal && <SettingsModal />}
 
       <Navbar />
-
       <GameEvents />
 
       {loading && <Loader />}
-
       <div className="grid-container" onContextMenu={e => e.preventDefault()}>
         <Grid primary={true} />
         <Grid />
       </div>
 
-      {/* <pre>{JSON.stringify(game, null, 2)}</pre> */}
+      {game.players.length > 1 && game.players.every(player => !player.disconnected) && <EmotesMenu />}
     </div>
   );
 }

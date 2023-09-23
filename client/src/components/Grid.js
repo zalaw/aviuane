@@ -3,6 +3,7 @@ import ActionsButtons from "./ActionsButtons";
 import UserNotJoined from "./UserNotJoined";
 import { useGame } from "../contexts/GameContext";
 import Plane from "./Plane";
+import HeaderActionsButtons from "./HeaderActionsButtons";
 
 export default function Grid({ primary = false }) {
   const { game, myPlanes, myTurn, handleCellClick, opponentPlanes } = useGame();
@@ -49,6 +50,8 @@ export default function Grid({ primary = false }) {
 
   return (
     <div className="grid-outer">
+      <HeaderActionsButtons primary={primary} />
+
       <div className="grid" style={gridStyle}>
         {generateCells()}
         {primary && myPlanes.map(p => <Plane key={p.id} plane={p} />)}
